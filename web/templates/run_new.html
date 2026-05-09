@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}New Run — Stock Chart Modeling{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <h1>Launch a new pipeline run</h1>
+  <p>Pick a label (horizon × threshold) and how big a universe to use. Click submit and you'll be
+     redirected to a live monitor page that tails the log every 3 seconds.</p>
+  <div class="help">
+    <strong>What is a "label"?</strong>
+    The pipeline trains a classifier to predict whether a stock's price will rise by at least
+    <code>threshold</code>% in the next <code>horizon</code> trading days from any given anchor date.
+    The original document's headline was horizon=40, threshold=25%.
+  </div>
+  <div class="warning">
+    <strong>How long will it take?</strong>
+    On 4-core ARM64 CPU, with the full {{ data_status.tickers_on_disk }}-ticker universe:
+    expect ~5 hours wall-clock (mostly DINOv2 inference).
+    With a 100–500 ticker subset: ~5–20 minutes.
+  </div>
+</div>
+
+<form method="post" action="/runs/new" class="panel">
+  <h2>Run parameters</h2>
+
+  <div class="row">
+    <label for="horizon">Horizon (trading days)</label>
+    <div>
+      <input type="number" id="horizon" name="horizon" value="40" min="1" max="60" required>
+      <div class="hint">The forward window over which we measure return. Original doc used 40.</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="threshold">Threshold (decimal)</label>
+    <div>
+      <input type="number" id="threshold" name="threshold" value="0.25" min="0.01" max="1.0" step="0.01" required>
+      <div class="hint">Required forward return to count as a positive label. 0.25 = +25%. Original doc used 0.25.</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="n_tickers">Universe size</label>
+    <div>
+      <input type="number" id="n_tickers" name="n_tickers" value="200" min="0" max="10000" required>
+      <div class="hint">
+        0 = use the full universe (all {{ data_status.tickers_on_disk }} tickers).
+        <strong>For your first run, try 200</strong> — finishes in ~5 minutes and exercises every stage.
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="random_seeds">Random baseline seeds</label>
+    <div>
+      <input type="number" id="random_seeds" name="random_seeds" value="100" min="10" max="2000" required>
+      <div class="hint">More seeds = tighter random baseline distribution. 100 is fast; 200+ is more honest.</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="out_tag">Run name (tag)</label>
+    <div>
+      <input type="text" id="out_tag" name="out_tag" value="my_run" required>
+      <div class="hint">Alphanumeric/underscore/dash only. Will create <code>reports/&lt;tag&gt;/</code>.</div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn">Launch run</button>
+  <a href="/" class="btn secondary" style="margin-left:8px">Cancel</a>
+</form>
+
+<details>
+<summary>What labels combinations were tested in the original document?</summary>
+<p>The original tested 36 labels: H ∈ {5, 10, 15, 20, 30, 40} × T ∈ {5%, 10%, 15%, 20%, 25%, 30%}.
+   Plus 2 ranking variants per label (score_only and risk-adjusted) = 72 configurations total.
+   <strong>Trying many configs and reporting the best one is exactly what the deflated Sharpe ratio
+   penalizes.</strong> If you want a single honest result, pick one (horizon, threshold) before looking
+   at any data and stick with it.</p>
+</details>
+
+<details>
+<summary>How to interpret different (horizon, threshold) pairs</summary>
+<ul>
+  <li><strong>Short H, low T</strong> (5d, 5%): label fires often (~30–40% positive rate). Easier to predict, but small per-trade alpha is eaten by costs.</li>
+  <li><strong>Long H, high T</strong> (40d, 25%): label fires rarely (~5–10% positive rate). Harder to predict, but successful predictions are very profitable.</li>
+  <li><strong>Original best</strong>: 40d / 25%, "score only" — but see <a href="/flaws">Flaws &amp; Fixes</a> for why this headline number is misleading.</li>
+</ul>
+</details>
+
+{% endblock %}

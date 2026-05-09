@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Glossary{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <h1>Glossary</h1>
+  <p>Plain-language definitions for every term used on this site. If you see a term in a chart
+     or table that isn't here, let me know and I'll add it.</p>
+</div>
+
+<div class="panel">
+<h2>Returns and growth</h2>
+
+<details open>
+<summary><strong>CAGR</strong> — Compound Annual Growth Rate</summary>
+<p>The constant annual return that, if compounded over the test period, would produce the observed
+final equity. Formula: <code>(end / start)^(1/years) − 1</code>. <strong>Does not account for risk.</strong>
+A strategy with 30% CAGR and 70% drawdown is much worse than one with 20% CAGR and 15% drawdown.
+Always look at CAGR alongside max drawdown and Sharpe.</p>
+</details>
+
+<details>
+<summary><strong>Total return</strong></summary>
+<p>End equity divided by start equity, minus 1. If you started with $100k and ended with $250k,
+total return is +150%. Equivalent to CAGR if the time period is exactly 1 year.</p>
+</details>
+
+<details>
+<summary><strong>Win rate</strong></summary>
+<p>Fraction of closed trades with a positive return. Higher is better, but a 95% win rate strategy
+where the 5% losers are -100% can still lose money. Always check profit factor too.</p>
+</details>
+
+<details>
+<summary><strong>Profit factor</strong></summary>
+<p>Sum of winning trade returns divided by absolute sum of losing trade returns. >1 means winners
+outweigh losers in absolute return terms. Above 2 is strong; below 1 means the strategy lost money.</p>
+</details>
+</div>
+
+<div class="panel">
+<h2>Risk</h2>
+
+<details open>
+<summary><strong>Maximum drawdown (max DD)</strong></summary>
+<p>The worst peak-to-trough loss the strategy ever experienced, as a percentage of equity at the peak.
+A −40% max drawdown means at some point the account lost 40% from its prior high before recovering.
+This is what makes traders panic-sell and abandon a strategy. Smaller drawdowns are far more
+psychologically tradeable than the same CAGR with a bigger drawdown.</p>
+</details>
+
+<details>
+<summary><strong>Sharpe ratio</strong></summary>
+<p>Mean daily return divided by standard deviation of daily returns, multiplied by √252 to annualize.
+Roughly: how many "units of risk" per "unit of reward." Above 1 = decent; above 2 = strong; above 3 =
+suspicious (recheck for leakage or survivorship bias).</p>
+</details>
+
+<details>
+<summary><strong>Daily Sharpe vs annualized Sharpe</strong></summary>
+<p>If you see "Sharpe ≈ 2.18" without a unit, it's almost certainly annualized. A literal daily Sharpe
+of 2.18 would imply annualized 2.18·√252 ≈ 34.6, which is impossible for any real strategy. The
+original document's "daily Sharpe ~2.18" claim is annualized, not daily.</p>
+</details>
+
+<details>
+<summary><strong>Deflated Sharpe Ratio (DSR)</strong></summary>
+<p>If you try N model configurations and report the best, the Sharpe of that best config is biased
+upward — even if all N have zero true skill. The DSR (Bailey & López de Prado, 2014) deflates the
+threshold a Sharpe needs to cross to be considered evidence of real skill, by an amount proportional
+to √(2·log N). A "DSR significance" of 0.95+ means: even after accounting for selection bias from N
+trials, this Sharpe is unlikely under the null. The original document tried 72+ configs and reported
+the best — DSR pushes its threshold up substantially.</p>
+</details>
+</div>
+
+<div class="panel">
+<h2>Pipeline-specific</h2>
+
+<details open>
+<summary><strong>Anchor date</strong></summary>
+<p>A date on which the model makes a prediction for a stock. Anchors are weekly (last trading day
+per ISO calendar week per ticker). For each anchor, the model looks at the prior 252 trading days
+of price/volume to predict the forward H-day return.</p>
+</details>
+
+<details>
+<summary><strong>Horizon (H)</strong></summary>
+<p>How many trading days forward the label measures. H=40 means: did <code>Close[anchor + 40 trading days]</code>
+exceed <code>Close[anchor] × (1 + threshold)</code>?</p>
+</details>
+
+<details>
+<summary><strong>Threshold (T)</strong></summary>
+<p>The required forward return for the label to be "1" (positive). T=0.25 means a 25% forward gain
+counts as positive, anything less is "0".</p>
+</details>
+
+<details>
+<summary><strong>Walk-forward validation</strong></summary>
+<p>Train on years t1…tN, test on year tN+1. Then retrain on years t1…tN+1, test on tN+2. And so on.
+Stocks change behavior over time, so this is more honest than a random train/test split (which would
+leak future regimes into the training set).</p>
+</details>
+
+<details>
+<summary><strong>Purged walk-forward + embargo (López de Prado)</strong></summary>
+<p>If your label is forward-looking (e.g., 40-day return), then the late-Dec-2018 anchors in the
+training set have labels resolved using prices from Feb 2019 — which is in the test fold. That's
+label leakage. The fix is to <strong>purge</strong>: drop training rows whose label resolution date
+falls inside the test fold (plus an extra <strong>embargo</strong> buffer). The original document's
+walk-forward had no purging — that's why the corrected version implements it.</p>
+</details>
+
+<details>
+<summary><strong>Prefilter (Close > 1.5 × MA250)</strong></summary>
+<p>Before running any model, the pipeline restricts attention to stocks whose closing price is at
+least 1.5× their 250-day moving average. This is a strong "uptrend" filter. Both the model AND the
+random/baseline portfolios sample from the same prefiltered universe — so the random baseline already
+inherits significant momentum exposure, which the model then has to beat.</p>
+</details>
+
+<details>
+<summary><strong>DINOv2</strong></summary>
+<p>A self-supervised vision transformer trained by Meta AI on natural images. We freeze it and use it
+to convert 224×224 chart images into 384-dimensional embeddings. Honestly: line charts are wildly
+out-of-distribution for DINOv2 — the engineered-features baseline (no images) is the more important
+track to watch.</p>
+</details>
+
+<details>
+<summary><strong>Slippage</strong> · <strong>commission</strong> · <strong>ADV</strong></summary>
+<p><strong>Slippage</strong>: the difference between the price you wanted to fill at and the price you
+actually got. Buying tends to push the price up against you; selling tends to push it down. Modeled
+here as 10 bps each side (configurable). <strong>Commission</strong>: broker fee, here $0.005/share
+capped at 0.5% of trade value. <strong>ADV</strong>: average daily dollar volume traded. The simulator
+caps each position at 0.5% of the stock's 20-day ADV — so you can't buy more than the market will
+absorb without moving the price.</p>
+</details>
+</div>
+
+<div class="panel">
+<h2>Statistics</h2>
+
+<details>
+<summary><strong>Multiple-comparison bias</strong></summary>
+<p>If you try 100 strategies and report the one that worked best, you've engineered an upward bias
+even if all 100 have zero true edge. Standard corrections include Bonferroni (multiply p-value by N),
+Šidák, BH-FDR, and the Deflated Sharpe Ratio. The original document tried 72+ configs without correcting.</p>
+</details>
+
+<details>
+<summary><strong>Block bootstrap</strong></summary>
+<p>A non-parametric way to estimate uncertainty in a time series with autocorrelation (like a daily
+return series where today's return is correlated with yesterday's). Resample the series in blocks
+of length B (here B = horizon = 40), refit, repeat 10,000 times, and look at the distribution of
+the result. This gives honest p-values without assuming returns are independent.</p>
+</details>
+
+<details>
+<summary><strong>Random baseline</strong></summary>
+<p>Run the same simulator with the same universe and same rules, but pick stocks at random instead
+of using the model's score. Run 100–1000 random seeds. If the model's CAGR is below the random
+baseline's median, the model is worse than picking stocks at random. If it's above the 95th percentile,
+that's necessary but not sufficient for real edge (see "multiple-comparison bias").</p>
+</details>
+</div>
+
+{% endblock %}

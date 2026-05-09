@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="panel">
+  <h1>📈 Stock Chart Modeling — Corrected Rebuild</h1>
+  <p>This is a from-scratch re-implementation of a stock-selection research pipeline,
+    with explicit corrections for 7 high-severity flaws identified by a multi-subagent audit
+    of the original design document. <strong>You can use this UI without writing any code.</strong></p>
+
+  <div class="help">
+    <strong>What does this pipeline actually do?</strong>
+    It tries to predict which stocks will go up the most over the next 5–40 trading days,
+    by looking at the shape of their price chart over the past year and their volume pattern.
+    It then runs a portfolio simulator that actually buys/sells based on the predictions
+    and reports how much money you would have made versus picking stocks at random.
+    <br><br>
+    <strong>Why is the "corrected rebuild" different from the original?</strong>
+    The original document claimed 61% annualized returns. After honest statistical correction
+    it's likely 14–17% net of trading costs — and that may not actually beat a simple
+    "rank by 12-month momentum" strategy. See <a href="/flaws">Flaws &amp; Fixes</a> for the full critique.
+  </div>
+</div>
+
+<h2>Where do I start?</h2>
+<div class="cards">
+  <div class="card good">
+    <h4>1. Look at existing results</h4>
+    <p>You already have at least one completed run. Click below to see the equity curves and metrics.</p>
+    <a href="/runs" class="btn">View results →</a>
+  </div>
+  <div class="card">
+    <h4>2. Launch a new run</h4>
+    <p>Pick a horizon (e.g. 40 days) and threshold (e.g. 25%), and the pipeline will train
+       three models and compare them against five non-ML baselines.</p>
+    <a href="/runs/new" class="btn">New run →</a>
+  </div>
+  <div class="card">
+    <h4>3. Read the critique</h4>
+    <p>Why are the original document's numbers misleading? Twelve subagents went through it
+       and found 7 high-severity flaws. Each is documented with severity and fix.</p>
+    <a href="/flaws" class="btn secondary">Read flaws →</a>
+  </div>
+  <div class="card">
+    <h4>4. Look up unfamiliar terms</h4>
+    <p>CAGR, Sharpe, drawdown, deflated Sharpe, walk-forward — every term used on this site
+       has a plain-language explanation in the glossary.</p>
+    <a href="/glossary" class="btn secondary">Glossary →</a>
+  </div>
+</div>
+
+<h2>Project status</h2>
+<div class="cards">
+  <div class="card">
+    <h4>Universe size</h4>
+    <div class="big">{{ data_status.universe_size }}</div>
+    <div class="sub">tickers in working_universe.csv</div>
+  </div>
+  <div class="card {% if data_status.tickers_on_disk > 1000 %}good{% elif data_status.tickers_on_disk > 0 %}warn{% else %}bad{% endif %}">
+    <h4>OHLCV data on disk</h4>
+    <div class="big">{{ data_status.tickers_on_disk }}</div>
+    <div class="sub">parquet files in data/adjusted/</div>
+  </div>
+  <div class="card">
+    <h4>Completed runs</h4>
+    <div class="big">{{ runs|length }}</div>
+    <div class="sub">runs with a headline.json</div>
+  </div>
+  <div class="card {% if active_runs %}warn{% else %}{% endif %}">
+    <h4>Active background runs</h4>
+    <div class="big">{{ active_runs|length }}</div>
+    {% for r in active_runs %}
+      <div class="sub">⚙ <a href="/monitor/{{ r.tag }}">{{ r.tag }}</a> (PID {{ r.pid }})</div>
+    {% endfor %}
+    {% if not active_runs %}<div class="sub">none running</div>{% endif %}
+  </div>
+</div>
+
+{% if runs %}
+<h2>Recent runs</h2>
+<table>
+  <thead><tr><th>Tag</th><th>Label</th><th class="num">Tickers</th><th class="num">Anchor rows</th><th class="num">Wall sec</th><th></th></tr></thead>
+  <tbody>
+  {% for r in runs %}
+    <tr>
+      <td><strong><a href="/runs/{{ r.tag }}">{{ r.tag }}</a></strong></td>
+      <td><code>{{ r.label }}</code></td>
+      <td class="num">{{ r.n_tickers }}</td>
+      <td class="num">{{ r.n_anchors }}</td>
+      <td class="num">{{ '%.1f'|format(r.wall_seconds) }}</td>
+      <td><a href="/runs/{{ r.tag }}">open →</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<details>
+<summary>What does each box on this page mean?</summary>
+<p><strong>Universe size:</strong> the candidate ticker pool fetched from NASDAQ. Active US listings minus ETFs and test issues, plus a hand-curated delisted-ticker seed list.</p>
+<p><strong>OHLCV data on disk:</strong> how many of those tickers have daily Open/High/Low/Close/Volume parquet files cached locally (downloaded from yfinance with split-adjustment turned on).</p>
+<p><strong>Completed runs:</strong> finished pipeline runs. Each run has its own folder under <code>reports/</code> containing equity curves, trade blotters, and a headline.json summary.</p>
+<p><strong>Active background runs:</strong> if you launched a run from the UI, it shows up here while the Python process is alive.</p>
+</details>
+
+{% endblock %}

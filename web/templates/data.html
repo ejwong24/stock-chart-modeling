@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Data Status{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <h1>Data status</h1>
+  <p>The pipeline reads daily Open/High/Low/Close/Volume bars from <code>data/adjusted/&lt;TICKER&gt;.parquet</code>,
+     downloaded via yfinance with <code>auto_adjust=True</code> (split- and dividend-adjusted close prices).</p>
+</div>
+
+<div class="cards">
+  <div class="card">
+    <h4>Universe size</h4>
+    <div class="big">{{ status.universe_size }}</div>
+    <div class="sub">tickers in <code>working_universe.csv</code></div>
+  </div>
+  <div class="card {% if status.tickers_on_disk > 1000 %}good{% elif status.tickers_on_disk > 0 %}warn{% else %}bad{% endif %}">
+    <h4>OHLCV files on disk</h4>
+    <div class="big">{{ status.tickers_on_disk }}</div>
+    <div class="sub">parquet files in <code>data/adjusted/</code></div>
+  </div>
+  <div class="card">
+    <h4>Coverage</h4>
+    <div class="big">{% if status.universe_size > 0 %}{{ '%.0f%%'|format(status.tickers_on_disk / status.universe_size * 100) }}{% else %}—{% endif %}</div>
+    <div class="sub">% of universe with downloaded OHLCV</div>
+  </div>
+</div>
+
+{% if status.acquisition_summary %}
+<h2>Last acquisition run</h2>
+<pre>{{ status.acquisition_summary | tojson(indent=2) }}</pre>
+{% endif %}
+
+<div class="help">
+  <strong>If the count is 0:</strong> run the data acquisition script before launching any pipeline run.
+  From the project root with the venv activated:
+  <pre>python scripts/01_build_universe.py
+python scripts/02_acquire_data.py</pre>
+  Step 1 takes seconds; step 2 takes 30–60 minutes for ~7,000 tickers.
+</div>
+
+<div class="help">
+  <strong>Survivorship bias warning:</strong>
+  yfinance does not enumerate companies that delisted/went bankrupt years ago, so the universe
+  is missing some of those. The static <code>config/delisted_seed.txt</code> partially mitigates this,
+  but for full correction you need a paid data source (Polygon.io, EODHD, CRSP). See
+  <a href="/flaws#1-survivorship-bias--high">Flaws &amp; Fixes #1</a> for details.
+</div>
+
+<details>
+<summary>How are the tickers chosen?</summary>
+<p>The active universe is built from NASDAQ Trader's official symbol files (<code>nasdaqlisted.txt</code> and
+<code>otherlisted.txt</code>), filtered to common stocks (no ETFs, no test issues, no special character symbols).
+The delisted seed is a hand-curated list of well-known 2016–2026 delistings/bankruptcies.</p>
+<p>Files: <code>src/stock_chart/universe.py</code>, <code>config/delisted_seed.txt</code>.</p>
+</details>
+
+<details>
+<summary>Why split-adjusted close prices?</summary>
+<p>The original document had to filter out 577 files with &gt;50% one-day price moves because the raw close
+prices contained split-adjustment artifacts (e.g., a 1-for-10 reverse split looks like a -90% one-day move
+in unadjusted data). Setting <code>auto_adjust=True</code> in yfinance applies splits and dividends to the
+close column directly, eliminating this class of bug.</p>
+</details>
+
+{% endblock %}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Stock Chart Modeling{% endblock %}</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+<header class="topnav">
+  <div class="brand">
+    <a href="/"><span class="logo">📈</span><span class="title">Stock Chart Modeling</span></a>
+    <span class="tagline">Corrected reproduction · noob-friendly</span>
+  </div>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/runs">Results</a>
+    <a href="/runs/new" class="cta">New Run</a>
+    <a href="/data">Data</a>
+    <a href="/flaws">Flaws&nbsp;&amp;&nbsp;Fixes</a>
+    <a href="/research">Research</a>
+    <a href="/glossary">Glossary</a>
+    <a href="/readme">README</a>
+    <a href="/config">Config</a>
+  </nav>
+</header>
+
+<main>
+{% block content %}{% endblock %}
+</main>
+
+<footer>
+  <small>Pipeline lives at <code>/home/ubuntu/projects/stock_chart_modeling/</code>.
+  Run <code>python tests/test_*.py</code> from the project root to verify.
+  See <a href="/flaws">Flaws&nbsp;&amp;&nbsp;Fixes</a> for the why behind every design decision.</small>
+</footer>
+</body>
+</html>

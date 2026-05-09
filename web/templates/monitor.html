@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Monitor: {{ tag }}{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <h1>Live monitor: <code>{{ tag }}</code></h1>
+  <p class="muted">Polling every 3 seconds. The page will switch to "complete" once
+     <code>reports/{{ tag }}/headline.json</code> is written.</p>
+  <div id="status-bar">
+    <span class="tag live" id="status-pill">⚙ Polling…</span>
+    <button id="stop-btn" class="btn danger" style="margin-left:10px;display:none">Stop run</button>
+    <a id="results-link" class="btn" href="/runs/{{ tag }}" style="display:none">Open results →</a>
+  </div>
+</div>
+
+<div class="panel">
+  <h3>Started command</h3>
+  <pre id="cmd">{{ info.cmd }}</pre>
+  <h3>Last log lines</h3>
+  <pre id="log" style="height: 60vh; overflow-y: scroll; white-space: pre-wrap"></pre>
+</div>
+
+<div class="help">
+  <strong>Pipeline stages (in order):</strong> universe → labels → engineered features →
+  render charts → DINOv2 embed (slowest) → splits → train 3 model tracks per fold →
+  simulate model + 5 baselines → 100–200 random seeds → deflated Sharpe →
+  write headline.json. Each step writes a timestamped <code>[NNN.Ns]</code> line.
+</div>
+
+<script>
+const tag = {{ tag|tojson }};
+let alive = true;
+
+async function poll() {
+  try {
+    const r = await fetch(`/api/monitor/${tag}?lines=200`).then(r=>r.json());
+    document.getElementById("log").textContent = r.log || "(no log yet)";
+    const pill = document.getElementById("status-pill");
+    const btn = document.getElementById("stop-btn");
+    const link = document.getElementById("results-link");
+    if (r.headline_ready) {
+      pill.textContent = "✅ Complete";
+      pill.className = "tag good";
+      link.style.display = "inline-block";
+      btn.style.display = "none";
+      alive = false;
+    } else if (r.alive) {
+      pill.textContent = "⚙ Running…";
+      pill.className = "tag live";
+      btn.style.display = "inline-block";
+    } else {
+      pill.textContent = "❌ Process exited (no headline.json written)";
+      pill.className = "tag bad";
+      btn.style.display = "none";
+      alive = false;
+    }
+  } catch (e) {
+    document.getElementById("log").textContent = `(poll error: ${e})`;
+  }
+  if (alive) setTimeout(poll, 3000);
+}
+poll();
+
+document.getElementById("stop-btn").addEventListener("click", async () => {
+  if (!confirm(`Send SIGTERM to run "${tag}"? This will stop it permanently.`)) return;
+  await fetch(`/api/monitor/${tag}/stop`, { method: "POST" });
+});
+</script>
+
+{% endblock %}

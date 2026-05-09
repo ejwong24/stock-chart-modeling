@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}{{ tag }} — Stock Chart Modeling{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <h1>Run: <code>{{ tag }}</code></h1>
+  <p class="muted">Label: <code>{{ summary.headline_label }}</code> ·
+    {{ summary.n_tickers_loaded }} tickers loaded ·
+    {{ summary.n_anchor_rows_after_prefilter }} anchor rows ·
+    {{ '%.1f'|format(summary.wall_seconds) }} sec wall-clock ·
+    folds: {{ summary.folds_run }}</p>
+  <p>
+    <a href="/runs/{{ tag }}/report-card" class="btn">📋 Honest Report Card →</a>
+    <span class="muted" style="margin-left:10px">Block-bootstrap CIs, deflated Sharpe, baseline gap, effective N</span>
+  </p>
+</div>
+
+<h2>Strategies, ranked by ending equity</h2>
+<div class="help">
+  <strong>How to read this:</strong>
+  Strategies above "random median" beat the random baseline. <em>Above "random p95"</em> is
+  the original document's claim — but with 72+ configurations tried, hitting p95 by chance has
+  ~97% probability under no-skill (see deflated Sharpe below).
+  <br><br>
+  <strong>Track types:</strong>
+  <code>lr_baseline</code>/<code>lgbm_image</code> use chart images;
+  <code>lgbm_engineered</code> uses ~30 hand-built features (no images);
+  <code>rank_*</code> are non-ML simple-momentum baselines.
+  <strong>If the simple <code>rank_*</code> baselines beat the ML models, the ML pipeline isn't justifying its complexity.</strong>
+</div>
+
+<table>
+<thead><tr><th>Track</th><th class="num">End equity</th><th class="num">CAGR</th>
+  <th class="num">Max DD</th><th class="num">Sharpe</th>
+  <th class="num">N trades</th><th class="num">Win rate</th><th class="num">Profit factor</th>
+  <th class="num">vs random %ile</th></tr></thead>
+<tbody>
+{% set ordered = summary.summaries|sort(attribute='end_equity', reverse=true) %}
+{% set rb = summary.random_baseline or {} %}
+{% for r in ordered %}
+<tr>
+  <td>
+    <span class="tag {% if 'lgbm_engineered' == r.track %}good{% elif r.track.startswith('rank_') %}warn{% endif %}">{{ r.track }}</span>
+  </td>
+  <td class="num">${{ '{:,.0f}'.format(r.end_equity) }}</td>
+  <td class="num {% if r.cagr > (rb.median_cagr or 0) %}green{% elif r.cagr < 0 %}red{% else %}amber{% endif %}">
+    {{ '%+.2f%%'|format(r.cagr * 100) }}
+  </td>
+  <td class="num red">{{ '%.2f%%'|format(r.max_dd * 100) }}</td>
+  <td class="num">{{ '%+.2f'|format(r.sharpe) }}</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">{{ '%.0f'|format(r.vs_random_pct * 100) }}th</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<h2>Equity curves</h2>
+<div class="help">
+  <strong>What you're looking at:</strong>
+  Each line is one strategy's account balance over time, starting at $100,000.
+  Hover any line to see its name and the value on a given date. Click a legend entry to hide/show.
+  <br>
+  <strong>Look for:</strong> Steep up = strong returns. Sharp drops = drawdowns the strategy didn't avoid.
+  Strategies that closely track each other are likely picking the same stocks.
+</div>
+
+<div id="equity-chart" class="chart"></div>
+
+<h3 style="margin-top:30px">Honesty check: Deflated Sharpe Ratio</h3>
+<div class="help">
+  <strong>Why this matters:</strong>
+  The original document claimed "100th percentile vs 100 random seeds" — but it tried 72 model configurations
+  to find that winner. Under the null hypothesis, P(at least one of 72 configs beats p95) ≈ 97.5%.
+  The Deflated Sharpe Ratio (Bailey & López de Prado, 2014) corrects the Sharpe threshold to account for
+  this multiple-testing inflation. Significance &gt; 0.95 means the result survives the correction.
+</div>
+
+{% set dsr = summary.deflated_sharpe %}
+<div class="cards">
+  <div class="card">
+    <h4>Observed Sharpe (annualized)</h4>
+    <div class="big">{{ '%+.3f'|format(dsr.observed_sharpe_annualized) }}</div>
+    <div class="sub">From the best track's daily equity returns</div>
+  </div>
+  <div class="card">
+    <h4>Deflated threshold</h4>
+    <div class="big">{{ '%+.3f'|format(dsr.deflated_sharpe_threshold_annualized) }}</div>
+    <div class="sub">Sharpe required to beat best-of-{{ dsr.n_trials }}-trials by chance</div>
+  </div>
+  <div class="card {% if dsr.deflated_sharpe_p_value_significant >= 0.95 %}good{% elif dsr.deflated_sharpe_p_value_significant >= 0.5 %}warn{% else %}bad{% endif %}">
+    <h4>Significance after deflation</h4>
+    <div class="big">{{ '%.3f'|format(dsr.deflated_sharpe_p_value_significant) }}</div>
+    <div class="sub">{% if dsr.deflated_sharpe_p_value_significant >= 0.95 %}Survives multiple-testing correction.{% elif dsr.deflated_sharpe_p_value_significant >= 0.5 %}Inconclusive — possibly real edge but not statistically distinguishable from luck given how many configs were tried.{% else %}Result is consistent with random chance after accounting for multiple-testing.{% endif %}</div>
+  </div>
+</div>
+
+<h3>Random baseline</h3>
+<div class="cards">
+  <div class="card">
+    <h4>Seeds run</h4>
+    <div class="big">{{ rb.n_seeds }}</div>
+    <div class="sub">independent random portfolios under identical rules</div>
+  </div>
+  <div class="card">
+    <h4>Median CAGR</h4>
+    <div class="big">{{ '%+.2f%%'|format(rb.median_cagr * 100) }}</div>
+    <div class="sub">middle of the 50-50 random baseline distribution</div>
+  </div>
+  <div class="card">
+    <h4>p95 ending equity</h4>
+    <div class="big">${{ '{:,.0f}'.format(rb.p95_end_equity) }}</div>
+    <div class="sub">95th-pct lucky random portfolio</div>
+  </div>
+  <div class="card">
+    <h4>p99 ending equity</h4>
+    <div class="big">${{ '{:,.0f}'.format(rb.p99_end_equity) }}</div>
+    <div class="sub">99th-pct lucky random portfolio</div>
+  </div>
+</div>
+
+<details>
+<summary>Open trade blotter for the best track</summary>
+<div id="blotter-host"></div>
+</details>
+
+<script>
+(async function () {
+  const tag = {{ tag|tojson }};
+  const tracks = {{ tracks|tojson }};
+  const colors = {
+    lr_baseline: "#6ea8ff",
+    lgbm_image:  "#f08aff",
+    lgbm_engineered: "#4ee0a8",
+    rank_252d_return: "#ffb454",
+    rank_60d_return:  "#ffd070",
+    rank_ma250_extension: "#ffe49a",
+    rank_52w_high_distance: "#ff8e8e",
+    rank_inv_60d_vol: "#a0a0c8"
+  };
+  const traces = [];
+  for (const t of tracks) {
+    const r = await fetch(`/api/runs/${tag}/equity/${t}`).then(r=>r.json());
+    if (r.date && r.date.length) {
+      traces.push({
+        x: r.date, y: r.equity, type: "scatter", mode: "lines", name: t,
+        line: { color: colors[t] || "#888", width: 1.7 },
+      });
+    }
+  }
+  Plotly.newPlot("equity-chart", traces, {
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+    font: { color: "#e8edf5", family: "Inter, sans-serif", size: 12 },
+    margin: { t: 30, l: 70, r: 30, b: 50 },
+    xaxis: { gridcolor: "#2b3344", title: "" },
+    yaxis: { gridcolor: "#2b3344", title: "Account equity ($)", type: "log" },
+    legend: { orientation: "h", y: -0.18 },
+  }, { displayModeBar: false, responsive: true });
+
+  // Pick best track and pull blotter
+  let bestTrack = null, bestEq = -Infinity;
+  for (const t of traces) {
+    const last = t.y[t.y.length-1];
+    if (last > bestEq) { bestEq = last; bestTrack = t.name; }
+  }
+  if (bestTrack) {
+    const blot = await fetch(`/api/runs/${tag}/blotter/${bestTrack}`).then(r=>r.json());
+    if (Array.isArray(blot) && blot.length) {
+      const cols = ["entry_date","exit_date","ticker","entry_price","exit_price","shares","trade_return_pct"];
+      let html = `<p class="muted">Best track: <code>${bestTrack}</code> · first 500 trades shown.</p>`;
+      html += "<table><thead><tr>";
+      for (const c of cols) html += `<th>${c}</th>`;
+      html += "</tr></thead><tbody>";
+      for (const row of blot.slice(0, 500)) {
+        html += "<tr>";
+        for (const c of cols) {
+          let v = row[c]; if (typeof v === "number" && c.includes("price")) v = "$"+v.toFixed(2);
+          if (typeof v === "number" && c.endsWith("_pct")) v = (v*100).toFixed(2)+"%";
+          html += `<td>${v ?? ""}</td>`;
+        }
+        html += "</tr>";
+      }
+      html += "</tbody></table>";
+      document.getElementById("blotter-host").innerHTML = html;
+    } else {
+      document.getElementById("blotter-host").innerHTML = "<p>(no trades)</p>";
+    }
+  }
+})();
+</script>
+
+<details>
+<summary>What do the colored "tag" labels mean?</summary>
+<p><strong>Green: <code>lgbm_engineered</code></strong> — the falsification baseline. ~30 hand-built features (returns, volatility, drawdown, MA distance, beta) → LightGBM. No images. If this beats <code>lgbm_image</code>, the chart-image stack isn't adding value.</p>
+<p><strong>Default: <code>lr_baseline</code> / <code>lgbm_image</code></strong> — uses DINOv2 chart-image embeddings + volume PCA. <code>lr_baseline</code> matches the original document; <code>lgbm_image</code> swaps the linear head for gradient-boosted trees.</p>
+<p><strong>Amber: <code>rank_*</code></strong> — non-ML simple-momentum baselines. Sort the universe by 252-day return, by 60-day return, by MA250 extension, by 52-week-high proximity, or by low volatility, and buy the top 5 each week. <strong>The original document never compared against these.</strong></p>
+</details>
+
+{% endblock %}

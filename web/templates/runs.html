@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="panel">
+  <h1>Results</h1>
+  <p>Each row is one completed pipeline run. The "best track" is whichever of the 8 strategies
+     (3 ML model tracks + 5 simple-momentum baselines) ended with the highest equity in that run.</p>
+  <div class="help">
+    <strong>How to read this table:</strong>
+    Click a tag to open the full breakdown with equity curves and per-strategy metrics.
+    Compare the model's CAGR to the random-baseline median. If the model isn't well above the median,
+    the ML pipeline isn't adding value over picking stocks at random within the same universe.
+  </div>
+</div>
+
+{% if runs %}
+<table>
+  <thead>
+    <tr>
+      <th>Tag</th>
+      <th>Label</th>
+      <th class="num">Tickers</th>
+      <th class="num">Best track</th>
+      <th class="num">Best CAGR</th>
+      <th class="num">Best end equity</th>
+      <th class="num">Random median CAGR</th>
+      <th class="num">Random p95 equity</th>
+      <th class="num">Wall sec</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in runs %}
+    <tr>
+      <td><strong><a href="/runs/{{ r.tag }}">{{ r.tag }}</a></strong></td>
+      <td><code>{{ r.label }}</code></td>
+      <td class="num">{{ r.n_tickers }}</td>
+      <td><span class="tag">{{ r.best_track }}</span></td>
+      <td class="num {% if r.best_cagr > r.random_median_cagr %}green{% elif r.best_cagr < 0 %}red{% else %}amber{% endif %}">
+        {{ '%+.2f%%'|format(r.best_cagr * 100) }}
+      </td>
+      <td class="num">${{ '{:,.0f}'.format(r.best_equity) }}</td>
+      <td class="num muted">{{ '%+.2f%%'|format(r.random_median_cagr * 100) }}</td>
+      <td class="num muted">${{ '{:,.0f}'.format(r.random_p95_eq) }}</td>
+      <td class="num muted">{{ '%.1f'|format(r.wall_seconds) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="warning">No completed runs yet. <a href="/runs/new">Launch a new run →</a></div>
+{% endif %}
+
+<details>
+<summary>What is "best CAGR" really measuring?</summary>
+<p>CAGR = compound annual growth rate. It's the constant annual return that, if compounded over the test period, would produce the observed final equity. CAGR does not account for risk — a strategy with 30% CAGR and 70% drawdown is worse than one with 20% CAGR and 15% drawdown. Look at the run detail page for max drawdown and Sharpe ratio.</p>
+<p>Within an already-momentum-prefiltered universe (the pipeline only considers stocks where Close &gt; 1.5 × 250-day MA), the "random" baseline already inherits strong momentum exposure. So the model needs to beat random by a substantial margin, not just edge it out.</p>
+</details>
+
+{% endblock %}

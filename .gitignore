@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+
+# Large binary data — never commit
+data/raw/
+data/adjusted/
+data/embeddings/
+data/images/
+data/labels/
+data/features/
+data/splits/
+data/scores/
+data/forward_picks/
+data/forward_realized/
+data/universe/edgar_form25.csv
+data/universe/delisted_inferred.csv
+*.parquet
+*.npy
+*.npz
+*.pkl
+*.joblib
+
+# Run outputs (regenerable; some too large)
+reports/*/dinov2_embeddings.npy
+reports/*/anchor_kept.parquet
+reports/*/labels.parquet
+reports/*/engineered_features.parquet
+reports/*/scores_*.parquet
+reports/lockbox.audit.jsonl
+reports/lockbox.registry.json
+
+# Configs that contain secrets / per-machine paths
+config/local_*.yaml
+
+# Trial registry (auto-generated)
+configs/trial_registry.jsonl
+
+# Web server runtime
+web/logs/
+/tmp/
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

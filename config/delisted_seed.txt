@@ -1,0 +1,67 @@
+# Static delisted/distressed-ticker seed list for partial survivorship-bias
+# mitigation. Conservative, hand-curated 2016-2026 US listings that are
+# known to have delisted, gone bankrupt, been taken private, or experienced
+# severe distress.
+#
+# Limitation: yfinance does not reliably serve historical bars for tickers
+# that have been off-exchange long enough to be purged from Yahoo's index.
+# Some of these may return empty data; the pipeline tolerates that.
+#
+# For full point-in-time delisted coverage, upgrade data source to
+# Polygon.io, EODHD, Norgate, or CRSP. See FLAWS_AND_FIXES.md.
+SIVB
+SBNY
+FRC
+BBBY
+JCPNQ
+TRCH
+LK
+EROS
+WISH
+RIDE
+NKLA
+TWTR
+LUMN
+LCID
+RIVN
+PSFE
+CLOV
+HTZ
+ATVI
+VMW
+TWX
+CELG
+SCTY
+LNKD
+YHOO
+CTXS
+XLNX
+FLIR
+INFO
+ZNGA
+WORK
+RDFN
+PTON
+OPEN
+WBD
+DISH
+NWS
+PCG
+LEN
+KKR
+COTY
+GPS
+AMC
+GME
+SAVA
+GTLB
+DKNG
+LMND
+PLBY
+RKT
+WW
+BARK
+HIMS
+PONY
+GOOS
+AEO

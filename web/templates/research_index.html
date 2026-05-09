@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Research{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <h1>🔬 Research Deep-Dives</h1>
+  <p>60 parallel subagents audited 5 hard open problems for this project. Each problem
+     was hit by 12 specialized critiques, then synthesized into a recommended path.</p>
+  <div class="help">
+    <strong>How to read these:</strong> Click any problem to see the synthesis (top action)
+    plus all 11 specialized critiques with concrete code. The synthesis is the executive
+    summary; the rest is the receipts.
+  </div>
+</div>
+
+<h2>The 5 problems</h2>
+<div class="cards">
+{% for d in docs %}
+  <div class="card">
+    <h4>{{ d.title }}</h4>
+    <a href="/research/{{ d.slug }}" class="btn secondary" style="margin-top:8px">Open →</a>
+    <div class="sub" style="margin-top:8px">{{ '%.1f'|format(d.size_kb) }} KB · 12-subagent synthesis</div>
+  </div>
+{% endfor %}
+</div>
+
+<div class="panel md" id="index-md"></div>
+
+<script>
+const md = {{ index_md|tojson }};
+document.getElementById("index-md").innerHTML = marked.parse(md);
+</script>
+
+{% endblock %}
