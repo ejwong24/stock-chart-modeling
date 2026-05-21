@@ -1,0 +1,46 @@
+{
+  "H20": {
+    "horizon_trading_days": 20,
+    "n_seeds": 200,
+    "median_ending_equity": 344449.4809298385,
+    "p5_ending_equity": 176517.45763017779,
+    "p95_ending_equity": 676918.9003685744,
+    "median_cagr": 0.13079453173328492,
+    "p5_cagr": 0.058102198511818116,
+    "p95_cagr": 0.20932695051896336,
+    "median_max_drawdown": -0.46943198092138366,
+    "p5_max_drawdown": -0.6182721761925623,
+    "p95_max_drawdown": -0.3680978325770033,
+    "median_profit_factor": 1.2795441992849148,
+    "median_win_rate": 0.47974229906439786,
+    "median_trade_count": 1863.0
+  },
+  "H40": {
+    "horizon_trading_days": 40,
+    "n_seeds": 200,
+    "median_ending_equity": 458784.4231323041,
+    "p5_ending_equity": 211760.9755207658,
+    "p95_ending_equity": 1262765.6405537268,
+    "median_cagr": 0.16346851827962516,
+    "p5_cagr": 0.0774198134630427,
+    "p95_cagr": 0.2866426341474286,
+    "median_max_drawdown": -0.49831066647952127,
+    "p5_max_drawdown": -0.6447114470008332,
+    "p95_max_drawdown": -0.3878220152325253,
+    "median_profit_factor": 1.4527232097508778,
+    "median_win_rate": 0.47691702702043287,
+    "median_trade_count": 1187.0
+  },
+  "meta": {
+    "spec": "SIMPLE_SMA250_RANDOM_SYSTEM_COMPARISON_TEST.docx",
+    "system": "stock_chart_modeling rebuild (this repo)",
+    "fractional_shares": false,
+    "share_rounding": "int(target_usd // fill_price)",
+    "starting_equity": 100000,
+    "n_seeds_per_horizon": 200,
+    "wall_seconds": 3249.5,
+    "rng": "numpy default_rng",
+    "data_source": "yfinance auto_adjust=True",
+    "universe_size": 3429
+  }
+}

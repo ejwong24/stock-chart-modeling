@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}02: The Audit{% endblock %}
+{% block content %}
+<div class="story-chapter">
+
+<span class="chapter-tag">Chapter 02 of 8</span>
+<h1>The Audit</h1>
+<p class="lede">
+  Before we touched a line of code, we sent the original document to 12
+  parallel AI subagents, each instructed to look for a different kind of
+  systematic flaw. They came back with 7 high-severity issues.
+</p>
+
+<h2>The 12 angles of attack</h2>
+
+<p>Each subagent took one of these:</p>
+
+<ol>
+  <li><strong>Survivorship bias</strong> &mdash; "Is the universe missing companies that went bankrupt?"</li>
+  <li><strong>Walk-forward leakage</strong> &mdash; "Do training labels secretly peek at the future?"</li>
+  <li><strong>Multiple-comparison bias</strong> &mdash; "How many configurations did they try before reporting the best?"</li>
+  <li><strong>Chart auto-scaling</strong> &mdash; "Does the way they draw the chart destroy information about returns?"</li>
+  <li><strong>Statistical significance</strong> &mdash; "Is the apparent edge inside the noise band?"</li>
+  <li><strong>Encoder choice</strong> &mdash; "Is DINOv2 a sensible model for line charts?"</li>
+  <li><strong>Volume features + transaction costs</strong> &mdash; "What does this cost to actually trade?"</li>
+  <li><strong>Class imbalance and ranking</strong> &mdash; "Is the binary 'up 25%' label the right thing to predict?"</li>
+  <li><strong>Reproducibility</strong> &mdash; "Could a coworker re-run this and get the same numbers?"</li>
+  <li><strong>Implementation plan</strong> &mdash; "How would a clean rebuild be structured?"</li>
+  <li><strong>Data sourcing</strong> &mdash; "Where would clean stock data come from?"</li>
+  <li><strong>Beat-the-baselines</strong> &mdash; "Did they compare against simple non-AI strategies?"</li>
+</ol>
+
+<p>Each agent wrote a 300-500 word critique with specific recommendations. Then we
+synthesized them.</p>
+
+<h2>The 7 high-severity flaws (and the magnitude each can produce)</h2>
+
+<table class="compare-table">
+  <thead><tr>
+    <th>#</th><th>Flaw</th><th>What it does to the headline</th><th>Severity</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td><strong>Survivorship bias</strong></td>
+      <td>Companies that went bankrupt 2016&ndash;2026 are missing from the dataset. The strategy buys exactly the high-momentum small-caps that often crash. With the catastrophes removed, the strategy looks magical.</td>
+      <td class="neg">HIGH (+3-10pp CAGR)</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><strong>Walk-forward leakage</strong></td>
+      <td>Training labels for late-Dec anchors resolve in February — which is the test period. The model is implicitly trained on future test-set prices.</td>
+      <td class="neg">HIGH</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><strong>Multiple-comparison bias</strong></td>
+      <td>The paper tested 72 different config combinations and reported the one that worked best. Under the null hypothesis (zero true skill) the probability of <em>at least one</em> beating the random 95th percentile is 97.5%.</td>
+      <td class="neg">HIGH</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><strong>Chart auto-scaling</strong></td>
+      <td>The chart image auto-fit each stock onto the same canvas, destroying information about whether the stock went up 5% or 500%. The model literally can't see the very thing the label depends on.</td>
+      <td class="neg">HIGH (silent)</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><strong>No simple-baseline comparison</strong></td>
+      <td>The paper only compared the model to random picks. But within an already-momentum-prefiltered universe, "random" inherits momentum exposure. A simple 12-month-momentum sort would likely match or beat the AI.</td>
+      <td class="neg">HIGH</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><strong>No transaction costs</strong></td>
+      <td>Real trading has slippage, spreads, commissions, halts, taxes. The strategy buys microcaps, where these costs are 60-200 bps round-trip. With 6+ turns/year that's 4-12% per year of pure cost.</td>
+      <td class="neg">HIGH</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td><strong>DINOv2 is out-of-distribution</strong></td>
+      <td>DINOv2 was trained on photos of cats, dogs, faces. Line charts on white backgrounds are 99% empty pixels. The encoder probably isn't doing what the paper assumed it was doing.</td>
+      <td class="warn">MED-HIGH</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout warn">
+  <h4>How big could these flaws be, combined?</h4>
+  <p>Individually, each one might shave 2-5 percentage points off the headline.
+  Combined, they're enough to fully explain the gap between the claim (+61%)
+  and what's actually reproducible (+5 to +17%). The audit predicted this
+  before we ran a single line of code.</p>
+</div>
+
+<h2>What about the 60 deeper subagents?</h2>
+
+<p>After the 12-agent audit, we ran a second pass: <strong>5 hard open problems × 12 subagents each = 60 deeper analyses</strong>. Each problem (survivorship-bias closure, encoder bake-off, lockbox protocol, transaction-cost calibration, path-dependent exits) got 12 specialized perspectives, then a synthesis chapter.</p>
+
+<figure>
+  <img src="/static/story/ss_research_index.png"
+       alt="Screenshot of the /research index page in the web UI">
+  <figcaption>
+    The <a href="/research">/research</a> page in the live UI &mdash; each card opens a
+    full deep-dive with concrete code recommendations. The implementation work in chapters
+    3-6 was driven directly by these synthesis findings.
+  </figcaption>
+</figure>
+
+<p>The audit recommendations drove every correction we made. The next chapter shows what
+happened when we applied them.</p>
+
+<div class="nav-row">
+  <a href="/story/01_claim" class="prev">
+    <span class="dir">← Previous</span>
+    <span class="title">01: The Magic Number</span>
+  </a>
+  <a href="/story/03_reproduction" class="next">
+    <span class="dir">Next →</span>
+    <span class="title">03: The Honest Reproduction</span>
+  </a>
+</div>
+
+</div>
+{% endblock %}

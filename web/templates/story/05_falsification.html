@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}05: The Falsification Test{% endblock %}
+{% block content %}
+<div class="story-chapter">
+
+<span class="chapter-tag">Chapter 05 of 8</span>
+<h1>The Falsification Test</h1>
+<p class="lede">
+  The original paper had two pillars: rendered chart images and a frozen DINOv2
+  image encoder. We A/B-tested them by running the same pipeline two ways:
+  once with the AI image stack, once with a 30-line non-AI baseline. Then we
+  compared.
+</p>
+
+<h2>Why this is the most important test in the project</h2>
+
+<p>If DINOv2-on-charts is doing something real, then a strategy with the image
+features should beat a strategy without them. If it's <em>not</em> doing anything real,
+the two should be statistically tied. There's no third option.</p>
+
+<p>This is called the <strong>falsification test</strong>: a single experiment designed
+to potentially kill the whole hypothesis. If the AI loses to the non-AI, the AI
+is decorative. If it wins by a wide margin, we should keep using it. If it
+barely ties, we should kill it on Occam's-razor grounds.</p>
+
+<h2>What each track does</h2>
+
+<table class="compare-table">
+  <thead><tr><th>Track</th><th>How it works</th><th>Lines of code</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="tag good">lgbm_image</span></td>
+      <td>
+        Render each stock's prior year of prices as a 224×224 line drawing.
+        Feed each image through DINOv2 ViT-S/14 (22M-parameter image AI from Meta).
+        Get 384-dim embedding. Add 64-dim volume features. PCA to 128 dims. Feed to LightGBM.
+      </td>
+      <td>~600 lines</td>
+    </tr>
+    <tr>
+      <td><span class="tag good">lgbm_engineered</span></td>
+      <td>
+        Compute 40 hand-built features per stock: returns at 1d/5d/21d/63d/126d/252d, volatility,
+        drawdowns, MA distances, slope, R², swing count, BB width, return-volume correlation, etc.
+        Feed to LightGBM. No images. No DINOv2. No PCA.
+      </td>
+      <td>~250 lines</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Both use the same labels, same splits, same train/test years, same LightGBM
+hyperparameters, same simulator, same costs. The <strong>only difference</strong> is whether the
+features are AI image embeddings or hand-built numbers.</p>
+
+<h2>The answer</h2>
+
+<figure>
+  <img src="/static/story/10_confidence_intervals.png"
+       alt="Confidence intervals for the three flagship configurations">
+  <figcaption>
+    95% confidence intervals on CAGR (block-bootstrap, 10,000 resamples) for three
+    flagship configurations. <strong>Every interval crosses zero.</strong>
+    With realistic costs, <code>lgbm_engineered</code> (engineered features, no AI) <em>beats</em>
+    <code>lgbm_image</code> by 2.6 percentage points of CAGR. The image AI is not earning its keep.
+  </figcaption>
+</figure>
+
+<div class="kpi-grid">
+  <div class="kpi accent">
+    <div class="label">DINOv2 + LightGBM (no costs)</div>
+    <div class="value">+17.27%</div>
+  </div>
+  <div class="kpi good">
+    <div class="label">Engineered + LightGBM (no costs)</div>
+    <div class="value">+12.97%</div>
+  </div>
+  <div class="kpi warn">
+    <div class="label">DINOv2 + LightGBM (realistic costs)</div>
+    <div class="value">+7.13%</div>
+  </div>
+  <div class="kpi good">
+    <div class="label">Engineered + LightGBM (realistic costs)</div>
+    <div class="value">+9.79%</div>
+  </div>
+</div>
+
+<div class="callout bad">
+  <h4>The verdict</h4>
+  <p><strong>Without costs:</strong> DINOv2 wins by ~4pp CAGR, but with worse drawdowns (−77% vs −70%) and the same Sharpe.
+  Net of risk, it's a tie.</p>
+  <p><strong>With realistic costs:</strong> the engineered baseline <em>wins</em> by 2.6pp CAGR. The image AI was
+  doing something <em>worse</em> than 40 numbers from a 1990s textbook.</p>
+  <p>This is the falsification firing. The DINOv2 image pipeline is decorative.</p>
+</div>
+
+<h2>Why the AI did worse than expected</h2>
+
+<p>The audit predicted this. DINOv2 was trained by Meta on a corpus of ~142 million natural
+images (photos of cats, dogs, faces, scenes). When you feed it a black line on a white background,
+~99% of the pixels are empty. The "embedding" it produces is dominated by image-level features
+like line density and anti-aliasing artifacts, not by the geometric properties of the price path.</p>
+
+<p>Meanwhile the 40 engineered features were hand-designed by humans who have looked at lots
+of stock charts. They explicitly encode the things that matter: slope, drawdown depth, days since
+recent peak, relative-to-moving-average distance, vol of vol, and so on. They're "dumber" than
+the AI but they're <em>in domain</em>.</p>
+
+<div class="callout">
+  <h4>The general lesson</h4>
+  <p>When you apply a state-of-the-art AI to a domain it wasn't trained on (line charts ≠ photos),
+  you're betting that generic features will transfer. Sometimes they do. Often they don't.
+  The way to find out is the falsification test: train the simplest possible baseline alongside
+  the fancy one and compare honestly. The original paper never ran this comparison.</p>
+</div>
+
+<h2>So what was creating the original 61% CAGR claim?</h2>
+
+<p>Now we can finally answer the question from chapter 1. The original number was a combination of:</p>
+
+<ul>
+  <li><strong>Survivorship bias</strong> in the universe (+3 to +10pp CAGR fake)</li>
+  <li><strong>Walk-forward leakage</strong> at fold boundaries (~+1-2pp fake)</li>
+  <li><strong>Best of 72 configs</strong> reported as the model (~+5 to +15pp fake under null)</li>
+  <li><strong>No transaction costs</strong> assumed (+5 to +10pp removed by reality)</li>
+  <li><strong>"Beat random in a momentum-prefiltered universe"</strong> framing (low bar; the
+  random was already strong-momentum)</li>
+  <li><strong>No simple-baseline comparison</strong> &mdash; if they'd run engineered+LightGBM
+  alongside the AI, they'd have seen the AI wasn't actually helping</li>
+</ul>
+
+<p>Take all six off and the +61% claim collapses to something in the +5% to +10% range pre-cost,
+which is roughly where the random median sits.</p>
+
+<div class="nav-row">
+  <a href="/story/04_costs" class="prev">
+    <span class="dir">← Previous</span>
+    <span class="title">04: Reality Bites: Costs</span>
+  </a>
+  <a href="/story/06_statistics" class="next">
+    <span class="dir">Next →</span>
+    <span class="title">06: Why It's Not Statistically Real</span>
+  </a>
+</div>
+
+</div>
+{% endblock %}

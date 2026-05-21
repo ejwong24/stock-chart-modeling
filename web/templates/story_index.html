@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Story — Stock Chart Modeling{% endblock %}
+{% block content %}
+
+<div class="story-hero">
+  <h1>📖 The Story</h1>
+  <p class="lede">
+    A guided walkthrough of what this project did, why each piece matters, and what the results
+    really mean. Each chapter is short, visual, and written in plain language &mdash; no PhD required.
+    Start at #1 and read in order, or jump around.
+  </p>
+</div>
+
+<div class="chapter-grid">
+  <a class="chapter-card" href="/story/01_claim">
+    <span class="num">CHAPTER 01</span>
+    <h3>The Magic Number</h3>
+    <p class="preview">
+      An email arrived claiming a stock-picking strategy that turned $100k into $3.23 million in 7 years.
+      That's 6× the S&amp;P 500. Either it's the holy grail, or something's wrong.
+    </p>
+    <span class="read-more">Start here →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/02_audit">
+    <span class="num">CHAPTER 02</span>
+    <h3>The Audit</h3>
+    <p class="preview">
+      We spun up 12 AI subagents to attack the claim from 12 different angles, looking for
+      systematic biases. They found 7 high-severity flaws.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/03_reproduction">
+    <span class="num">CHAPTER 03</span>
+    <h3>The Honest Reproduction</h3>
+    <p class="preview">
+      We rebuilt the pipeline from scratch, fixed the most blatant biases (leakage, baselines),
+      and re-ran on 3,429 real stocks. The magic number collapsed.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/04_costs">
+    <span class="num">CHAPTER 04</span>
+    <h3>Reality Bites: Costs</h3>
+    <p class="preview">
+      Real trading has spread, slippage, commissions, halts, and taxes. Adding those alone
+      knocks the strategy down further. By how much?
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/05_falsification">
+    <span class="num">CHAPTER 05</span>
+    <h3>The Falsification Test</h3>
+    <p class="preview">
+      We ran the same data through the fancy DINOv2 image AI <em>and</em> a 30-line non-AI baseline.
+      Which one won? Spoiler: it's not what you'd expect.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/06_statistics">
+    <span class="num">CHAPTER 06</span>
+    <h3>Why It's Not Statistically Real</h3>
+    <p class="preview">
+      Even where the model looks good, the "edge" turns out to be within the noise floor.
+      Three plain-language tools show why.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/07_sma250">
+    <span class="num">CHAPTER 07</span>
+    <h3>The Systems-Comparison Test</h3>
+    <p class="preview">
+      Before you compare two stock-picking models, you have to make sure both systems agree
+      on the same simple baseline. Here's what we found running Greg's spec.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/08_bottom_line">
+    <span class="num">CHAPTER 08</span>
+    <h3>The Bottom Line</h3>
+    <p class="preview">
+      What's the actual headline result, and what should a normal investor take away from
+      all this? One paragraph, three numbers.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+</div>
+
+<div class="panel" style="margin-top:28px">
+  <h2 style="margin-top:0">Tour vs. deep dive</h2>
+  <p>
+    This story is the <strong>tour</strong> &mdash; it's optimized for understanding,
+    not exhaustive citation. If you want to go deeper:
+  </p>
+  <ul>
+    <li><a href="/flaws">Flaws &amp; Fixes</a> &mdash; the full 7-flaw critique with severity ratings, magnitudes, and corrective actions implemented</li>
+    <li><a href="/research">Research</a> &mdash; the 60-subagent deep-dives across 5 hard open problems (~50,000 words)</li>
+    <li><a href="/glossary">Glossary</a> &mdash; plain-language definitions of every term (Sharpe, CAGR, max drawdown, deflated Sharpe, walk-forward, etc.)</li>
+    <li><a href="/runs">Results</a> &mdash; explore all the actual run outputs with interactive equity curves</li>
+  </ul>
+</div>
+
+{% endblock %}

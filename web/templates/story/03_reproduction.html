@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}03: The Honest Reproduction{% endblock %}
+{% block content %}
+<div class="story-chapter">
+
+<span class="chapter-tag">Chapter 03 of 8</span>
+<h1>The Honest Reproduction</h1>
+<p class="lede">
+  We built the whole pipeline from scratch in ~3,700 lines of Python, then ran it on
+  3,429 US stocks across 8 walk-forward folds with 200 random baselines for comparison.
+  When we faithfully reproduced the original method, the magic number collapsed.
+</p>
+
+<h2>What we actually built</h2>
+
+<p>The pipeline has 8 stages, each a small Python module that does one thing well:</p>
+
+<ol>
+  <li><strong>Universe</strong> &mdash; download list of US common stocks</li>
+  <li><strong>Data</strong> &mdash; pull 10 years of daily prices from yfinance (with split adjustments turned on)</li>
+  <li><strong>Labels</strong> &mdash; for every Friday, label "did this stock go up 25% in the next 40 trading days? Y/N"</li>
+  <li><strong>Features</strong> &mdash; compute 40 numbers per (stock, Friday) summarizing the past year</li>
+  <li><strong>Render + Embed</strong> &mdash; also draw a 224×224 chart image and run it through DINOv2</li>
+  <li><strong>Splits</strong> &mdash; carefully split history into "study these years, predict that year" chunks with no leakage</li>
+  <li><strong>Models</strong> &mdash; train 3 prediction models per chunk (LR original, LightGBM-with-images, LightGBM-engineered-only)</li>
+  <li><strong>Simulator</strong> &mdash; pretend to actually buy/sell based on predictions; compare to random and to 5 simple non-AI rules</li>
+</ol>
+
+<p>The fixes from the audit went into stages 3-6: <strong>purged walk-forward with embargo</strong> in
+splits.py kills label leakage; the <strong>3 model tracks</strong> let us A/B-test whether the images
+add value over engineered features.</p>
+
+<h2>The first big result: 8 strategies, 7 years, no realistic costs yet</h2>
+
+<figure>
+  <img src="/static/story/02_equity_no_cost.png"
+       alt="Equity curves for 8 strategies over 7 years, log scale, no realistic costs">
+  <figcaption>
+    All 8 strategies overlaid on a log-equity chart, $100k starting capital, 2019-2026.
+    The y-axis is logarithmic so a straight line equals a constant percentage return.
+    The fancy AI strategies (top three lines) finish at $200-500k. The simple non-AI strategies
+    (orange lines) cluster slightly below. The lowest two ended below $100k &mdash; they LOST money
+    over the whole 7 years.
+  </figcaption>
+</figure>
+
+<h3>Reading the numbers</h3>
+
+<table class="compare-table">
+  <thead><tr>
+    <th>Strategy</th>
+    <th class="num">End equity</th>
+    <th class="num">CAGR</th>
+    <th class="num">Max DD</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="tag good">lgbm_image</span> (DINOv2 + LightGBM)</td>
+      <td class="num">$496,558</td>
+      <td class="num pos">+17.27%</td>
+      <td class="num neg">−77.28%</td>
+    </tr>
+    <tr>
+      <td><span class="tag good">lgbm_engineered</span> (no images)</td>
+      <td class="num">$341,244</td>
+      <td class="num pos">+12.97%</td>
+      <td class="num neg">−69.85%</td>
+    </tr>
+    <tr>
+      <td><span class="tag warn">rank_inv_60d_vol</span> (low-volatility momentum)</td>
+      <td class="num">$312,903</td>
+      <td class="num pos">+12.01%</td>
+      <td class="num neg">−37.79%</td>
+    </tr>
+    <tr>
+      <td><span class="tag">lr_baseline</span> (matches original paper's method)</td>
+      <td class="num">$298,262</td>
+      <td class="num pos">+11.47%</td>
+      <td class="num neg">−82.71%</td>
+    </tr>
+    <tr>
+      <td>rank_252d_return (buy past-year winners)</td>
+      <td class="num">$235,196</td>
+      <td class="num pos">+8.87%</td>
+      <td class="num neg">−80.43%</td>
+    </tr>
+    <tr>
+      <td>rank_60d_return (buy 3-month winners)</td>
+      <td class="num">$78,344</td>
+      <td class="num neg">−2.40%</td>
+      <td class="num neg">−91.21%</td>
+    </tr>
+    <tr>
+      <td>rank_ma250_extension (buy biggest extensions above MA)</td>
+      <td class="num">$63,309</td>
+      <td class="num neg">−4.44%</td>
+      <td class="num neg">−93.64%</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>And the random baseline (200 random seeds picking 5 stocks per week from the
+same prefiltered universe, same rules): <strong>median ending equity = $294,804, median CAGR = +11.34%</strong>.</p>
+
+<div class="callout bad">
+  <h4>The shock</h4>
+  <p>Our reproduction of the original method (the <code>lr_baseline</code> row above, +11.47% CAGR)
+  beats the random median by <strong>just 13 basis points per year</strong>. The model is essentially
+  indistinguishable from random selection within the same momentum-prefiltered universe.
+  The 61% CAGR from the original paper was driven by <em>some combination</em> of survivorship
+  bias, multiple-comparison cherry-picking, walk-forward label leakage, and the absence of
+  cost modeling &mdash; not by the model finding real signal.</p>
+</div>
+
+<h2>You can explore this run yourself</h2>
+
+<figure>
+  <img src="/static/story/ss_runs_full_realistic.png"
+       alt="Screenshot of the run-detail page in the web UI showing the interactive Plotly chart">
+  <figcaption>
+    The <a href="/runs/full">/runs/full</a> page in the live UI. Click any legend entry to
+    hide/show that strategy. Hover any line to see exact equity and date.
+  </figcaption>
+</figure>
+
+<h2>Why did the simple non-AI strategies do so badly on this run?</h2>
+
+<p>The two big losers (rank_60d_return at −2.4% and rank_ma250_extension at −4.4%) are pure
+momentum chasers. They buy the most extreme recent winners. In a universe that's already
+prefiltered for momentum, doubling down on the most-extended names just rides the biggest
+bubbles down. They're not <em>strategies</em>; they're <em>cautionary tales</em> about why you
+need ranking subtlety, not just "buy what went up."</p>
+
+<p>The de facto winner on risk-adjusted basis &mdash; the strategy with the best Sharpe (0.61) and the
+smallest drawdown (−38%) &mdash; is <code>rank_inv_60d_vol</code>: "buy the calmest stocks within
+the momentum universe." It's a 5-line non-AI rule.</p>
+
+<div class="callout">
+  <h4>What we've shown so far</h4>
+  <p>Under honest methodology &mdash; right baselines, right splits, right random comparisons &mdash;
+  the AI strategy is no better than picking at random in the same prefiltered universe.
+  But we haven't yet added <strong>real-world trading costs.</strong> Those make it worse.
+  Next chapter.</p>
+</div>
+
+<div class="nav-row">
+  <a href="/story/02_audit" class="prev">
+    <span class="dir">← Previous</span>
+    <span class="title">02: The Audit</span>
+  </a>
+  <a href="/story/04_costs" class="next">
+    <span class="dir">Next →</span>
+    <span class="title">04: Reality Bites: Costs</span>
+  </a>
+</div>
+
+</div>
+{% endblock %}

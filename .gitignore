@@ -37,6 +37,8 @@ reports/*/engineered_features.parquet
 reports/*/scores_*.parquet
 reports/lockbox.audit.jsonl
 reports/lockbox.registry.json
+# SMA250 trade lists — large CSVs that can be regenerated from per_seed_summary
+reports/sma250_test/H*_full_trades.csv
 
 # Configs that contain secrets / per-machine paths
 config/local_*.yaml

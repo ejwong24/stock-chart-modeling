@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}07: The Systems-Comparison Test{% endblock %}
+{% block content %}
+<div class="story-chapter">
+
+<span class="chapter-tag">Chapter 07 of 8</span>
+<h1>The Systems-Comparison Test</h1>
+<p class="lede">
+  Before you compare two backtesting systems on a fancy model, you have to know
+  they agree on the same trivial baseline. Greg wrote a separate spec to nail this
+  down. Here's what we found running it.
+</p>
+
+<h2>Why this exists</h2>
+
+<p>Backtesting frameworks are like translators &mdash; subtly different conventions about
+"close price" (raw vs split-adjusted), anchor dates (Friday vs last-trading-day), share
+counts (fractional vs integer), and date handling can produce numerically different
+answers from the same data. When two researchers disagree on a model's CAGR, it's
+often because their <em>baseline</em> framework disagrees, not because of the model.</p>
+
+<p>Greg's spec defines a dead-simple baseline:</p>
+
+<ul>
+  <li><strong>Filter:</strong> Close &gt; 1.5 × 250-day moving average</li>
+  <li><strong>Selection:</strong> uniform random from eligible stocks (no model)</li>
+  <li><strong>Buy:</strong> up to 5 random stocks each week, 4% of equity each</li>
+  <li><strong>Hold:</strong> exactly 20 or 40 trading days</li>
+  <li><strong>Costs:</strong> zero</li>
+  <li><strong>Seeds:</strong> 200 (numbered 0 through 199)</li>
+</ul>
+
+<p>If two systems agree on the medians + p5 + p95 across 200 seeds, they agree on the data
+plumbing. If they disagree, you compare the trade lists to find where.</p>
+
+<h2>Our system's answers</h2>
+
+<figure>
+  <img src="/static/story/06_sma250_dispersion.png"
+       alt="Box plots showing the distribution of 200 random seed outcomes for H=20 and H=40">
+  <figcaption>
+    Box plot of all 200 random-portfolio outcomes for H=20 and H=40. The line in the middle
+    of each box is the median; the box spans the inter-quartile range; whiskers are 1.5× IQR;
+    dots are outliers. The medians are <strong>$344k (H=20)</strong> and <strong>$459k (H=40)</strong>.
+  </figcaption>
+</figure>
+
+<h3>H = 20 trading-day hold</h3>
+
+<table class="compare-table">
+  <thead><tr><th>Metric</th><th class="num">5th pct</th><th class="num">Median</th><th class="num">95th pct</th></tr></thead>
+  <tbody>
+    <tr><td>Ending equity</td><td class="num">$176,517</td><td class="num">$344,449</td><td class="num">$676,919</td></tr>
+    <tr><td>CAGR</td><td class="num">+5.81%</td><td class="num pos">+13.08%</td><td class="num">+20.93%</td></tr>
+    <tr><td>Max drawdown</td><td class="num">−61.83%</td><td class="num">−46.94%</td><td class="num">−36.81%</td></tr>
+    <tr><td>Profit factor</td><td class="num">—</td><td class="num">1.280</td><td class="num">—</td></tr>
+    <tr><td>Win rate</td><td class="num">—</td><td class="num">47.97%</td><td class="num">—</td></tr>
+    <tr><td>Trade count</td><td class="num">—</td><td class="num">1,863</td><td class="num">—</td></tr>
+  </tbody>
+</table>
+
+<h3>H = 40 trading-day hold</h3>
+
+<table class="compare-table">
+  <thead><tr><th>Metric</th><th class="num">5th pct</th><th class="num">Median</th><th class="num">95th pct</th></tr></thead>
+  <tbody>
+    <tr><td>Ending equity</td><td class="num">$211,761</td><td class="num">$458,784</td><td class="num">$1,262,766</td></tr>
+    <tr><td>CAGR</td><td class="num">+7.74%</td><td class="num pos">+16.35%</td><td class="num">+28.66%</td></tr>
+    <tr><td>Max drawdown</td><td class="num">−64.47%</td><td class="num">−49.83%</td><td class="num">−38.78%</td></tr>
+    <tr><td>Profit factor</td><td class="num">—</td><td class="num">1.453</td><td class="num">—</td></tr>
+    <tr><td>Win rate</td><td class="num">—</td><td class="num">47.69%</td><td class="num">—</td></tr>
+    <tr><td>Trade count</td><td class="num">—</td><td class="num">1,187</td><td class="num">—</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <h4>What this tells us about the model</h4>
+  <p>The H=40 median <em>random</em> portfolio achieved <strong>+16.35% CAGR</strong> in this universe.
+  Greg's original model claimed +61% &mdash; that's <strong>nearly 4× the random median</strong>. Any system
+  that produces a model number 4× the random median in a momentum-prefiltered universe should
+  be examined very carefully &mdash; that gap is far larger than the noise band the random seeds
+  define.</p>
+</div>
+
+<h2>How the two systems can disagree (the debugging guide)</h2>
+
+<p>If Greg's system produces materially different medians, the spec specifies the order
+of investigation:</p>
+
+<ol>
+  <li><strong>Universe mismatch.</strong> Different sets of tickers eligible on the same date. Easy to test:
+  compare the ticker list on, say, 2019-01-04.</li>
+  <li><strong>Price-adjustment mismatch.</strong> Raw close vs split-adjusted close. Look at a known split
+  date and compare prices.</li>
+  <li><strong>Date mismatch.</strong> Friday vs Thursday anchors, holiday handling. Compare a holiday week.</li>
+  <li><strong>Share-count mismatch.</strong> Fractional vs integer. Our system uses integer floor; declared.</li>
+  <li><strong>Accounting mismatch.</strong> When does compounding start? What's the equity definition?</li>
+</ol>
+
+<h2>The first 50 trades from H=20, seed=0</h2>
+
+<p>The spec section 12 says: "if the systems disagree, compare the first 50 trades of seed 0 trade-by-trade.
+That will quickly reveal whether the difference is universe, prices, dates, or accounting."</p>
+
+<p>Our seed-0 H=20 first trade:</p>
+
+<pre>2019-01-04  PHUN  entered at $2,703  exited 2019-02-04 at $12,500  → +362%</pre>
+
+<p>(Phunware Inc., real microcap pump in Jan 2019.) The full 50 are listed in the
+<a href="https://docs.google.com/document/d/1P4bZzZGDuOIgcuhuSXYTlVzBgy6_3VDYAAIFERXSAbY/edit">shared Google Doc</a>.</p>
+
+<h2>What this enables</h2>
+
+<p>Once two systems agree on the SMA250 random baseline, you can run any new model on
+both and trust the comparison. Without that baseline-agreement, every model-vs-model
+comparison is contaminated by data-plumbing differences.</p>
+
+<p>This is the kind of methodological discipline most academic papers skip. Greg's spec was
+exactly right.</p>
+
+<div class="nav-row">
+  <a href="/story/06_statistics" class="prev">
+    <span class="dir">← Previous</span>
+    <span class="title">06: Why It's Not Statistically Real</span>
+  </a>
+  <a href="/story/08_bottom_line" class="next">
+    <span class="dir">Next →</span>
+    <span class="title">08: The Bottom Line</span>
+  </a>
+</div>
+
+</div>
+{% endblock %}

@@ -350,6 +350,23 @@ def research_index(request: Request):
                                        {"docs": docs, "index_md": index_md})
 
 
+@app.get("/story", response_class=HTMLResponse)
+def story_index(request: Request):
+    """Guided walkthrough index — 8 chapters explaining the project."""
+    return templates.TemplateResponse(request, "story_index.html", {})
+
+
+@app.get("/story/{chapter}", response_class=HTMLResponse)
+def story_chapter(request: Request, chapter: str):
+    """Render a single story chapter."""
+    valid = {"01_claim", "02_audit", "03_reproduction", "04_costs",
+              "05_falsification", "06_statistics", "07_sma250",
+              "08_bottom_line"}
+    if chapter not in valid:
+        raise HTTPException(404, f"chapter '{chapter}' not found")
+    return templates.TemplateResponse(request, f"story/{chapter}.html", {})
+
+
 @app.get("/research/{slug}", response_class=HTMLResponse)
 def research_detail(request: Request, slug: str):
     p = PROJECT / "RESEARCH" / f"{slug}.md"

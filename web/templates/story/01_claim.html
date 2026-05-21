@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}01: The Magic Number{% endblock %}
+{% block content %}
+<div class="story-chapter">
+
+<span class="chapter-tag">Chapter 01 of 8</span>
+<h1>The Magic Number</h1>
+<p class="lede">
+  An email arrived from a researcher named Greg with a specific claim:
+  start with $100,000 in 2019, follow his stock-picking model's
+  recommendations for 7 years, and you'd have $3.23 million today.
+</p>
+
+<h2>What the email actually said</h2>
+
+<p>The original document was a careful 80-page write-up of a research pipeline.
+It used a state-of-the-art image-recognition AI (Meta's DINOv2) to "read" stock
+charts and rank stocks by their visual pattern. The headline numbers were
+explicit:</p>
+
+<div class="kpi-grid">
+  <div class="kpi bad">
+    <div class="label">Starting capital</div>
+    <div class="value">$100k</div>
+  </div>
+  <div class="kpi bad">
+    <div class="label">Ending equity</div>
+    <div class="value">$3.23M</div>
+  </div>
+  <div class="kpi bad">
+    <div class="label">CAGR</div>
+    <div class="value">+61%</div>
+  </div>
+  <div class="kpi bad">
+    <div class="label">vs random</div>
+    <div class="value">100th pct</div>
+  </div>
+</div>
+
+<p>The S&amp;P 500 averages about 10% per year over the long run. Real-world hedge funds
+typically dream of 15-20% per year. Anything above 30% is a unicorn. <strong>61% per year is
+nearly Madoff-grade impossible.</strong></p>
+
+<h3>Why we cared</h3>
+
+<p>The email was sincere, methodologically transparent, and from someone the
+user trusts. That's the worst kind of result &mdash; one that sounds too good to be
+true and is also detailed enough that you can't easily dismiss it. Greg
+wasn't claiming magic; he was claiming a specific pipeline gave a specific
+result. To know whether he'd found something real, we had to <strong>reproduce
+it ourselves under honest conditions</strong> and see what survived.</p>
+
+<h2>The size of the gap we're trying to explain</h2>
+
+<figure>
+  <img src="/static/story/01_claim_gap.png"
+       alt="Bar chart comparing original $3.23M claim against our reproduction at $298k and the random median at $295k">
+  <figcaption>
+    The original claim is a <strong>10x outlier</strong> compared to even our best reproduction,
+    and our reproduction of the same method (third bar above) lands almost exactly on top of
+    the random-pick median (last bar). When a claimed alpha disappears under reproduction,
+    something in the methodology was creating it.
+  </figcaption>
+</figure>
+
+<div class="callout">
+  <h4>How to read this chart</h4>
+  <p>The y-axis is logarithmic, so each gridline is 10×. The original claim
+  ($3.23M, leftmost red bar) is more than a full power-of-ten above
+  our honest reproduction (third bar). Our best new strategy with all the
+  realistic costs turned on (fourth bar) ends up at $256k. Random picks in
+  the same prefiltered universe end at $295k <em>without</em> any model. The
+  ML strategies are clustered with random, not with the original claim.</p>
+</div>
+
+<h2>What this chapter sets up</h2>
+
+<p>The rest of this story is the explanation. We'll cover:</p>
+
+<ul>
+  <li>The 12-subagent audit of the original methodology (next chapter)</li>
+  <li>What happens when we faithfully rebuild and re-run (chapter 3)</li>
+  <li>What happens when we add real-world trading costs (chapter 4)</li>
+  <li>Whether the AI is actually doing anything useful at all (chapter 5)</li>
+  <li>Why even the small remaining "edge" isn't statistically real (chapter 6)</li>
+  <li>The systems-comparison test we built to verify our numbers (chapter 7)</li>
+  <li>The single-paragraph takeaway (chapter 8)</li>
+</ul>
+
+<div class="nav-row">
+  <a href="/story" class="prev">
+    <span class="dir">← Back</span>
+    <span class="title">Story index</span>
+  </a>
+  <a href="/story/02_audit" class="next">
+    <span class="dir">Next →</span>
+    <span class="title">02: The Audit</span>
+  </a>
+</div>
+
+</div>
+{% endblock %}

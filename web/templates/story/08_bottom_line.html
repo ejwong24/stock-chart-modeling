@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}08: The Bottom Line{% endblock %}
+{% block content %}
+<div class="story-chapter">
+
+<span class="chapter-tag">Chapter 08 of 8</span>
+<h1>The Bottom Line</h1>
+<p class="lede">
+  Seven chapters of analysis distill to one paragraph. Here it is.
+</p>
+
+<h2>The single-paragraph answer</h2>
+
+<div class="callout">
+  <p style="font-size:16px; line-height:1.7; margin:0">
+    The original document's "+61% per year, $100k → $3.23M" claim was almost certainly a
+    methodological artifact. Reproducing the same method honestly under realistic transaction
+    costs gives ~<strong>+5% CAGR</strong> &mdash; barely above the random baseline in the same momentum-prefiltered
+    universe (~+11% median random CAGR). A simple non-AI rule ("rank by low 60-day volatility, hold")
+    achieves about the same return as the AI but with half the drawdown. After deflated-Sharpe and
+    block-bootstrap correction, the apparent edge is not statistically distinguishable from luck.
+    The strategy might have a small real edge or no edge at all &mdash; <strong>we can't tell from one
+    pass through the data</strong>, and the AI image-encoding pipeline does not earn its complexity.
+  </p>
+</div>
+
+<h2>Visualized one more time</h2>
+
+<figure>
+  <img src="/static/story/12_bottom_line.png"
+       alt="Horizontal bar chart comparing original claim, our reproductions, and S&P 500 baseline">
+  <figcaption>
+    The original claim sits ~<strong>9× higher</strong> than the same method reproduced honestly under realistic
+    costs. Our best AI strategy (no costs) lands at +17.27% CAGR but with a -77% max drawdown that
+    would have made it untradeable. The simple non-AI low-volatility rule beats the AI on
+    risk-adjusted basis. All the meaningful numbers cluster around the S&amp;P 500's long-run real
+    return (~7%) &mdash; consistent with "no real edge" once costs are accounted for.
+  </figcaption>
+</figure>
+
+<h2>What this means for a normal investor</h2>
+
+<table class="compare-table">
+  <thead><tr><th>If you have…</th><th>The strategy gives you…</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>$100k in a taxable account</td>
+      <td>~+5% CAGR pre-tax, ~+3% post-tax. <strong>Worse than just buying SPY</strong> (~+7% long-run real).</td>
+    </tr>
+    <tr>
+      <td>$100k in an IRA</td>
+      <td>~+5-7% CAGR (no tax drag). Roughly matches SPY. The 50%+ drawdowns make it psychologically worse to hold.</td>
+    </tr>
+    <tr>
+      <td>$1M to deploy</td>
+      <td>Same idea, slightly more cost drag. Capacity ceiling looming.</td>
+    </tr>
+    <tr>
+      <td>$10M+ to deploy</td>
+      <td>Strategy can't fit. The microcaps it picks would be moved 100-300 bps by your own orders.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>What this means for the research effort</h2>
+
+<p>Greg's effort was <em>not</em> wasted. The pipeline, the audit, and the corrected
+methodology are real assets. Specifically:</p>
+
+<ul>
+  <li><strong>The corrected pipeline</strong> (purged walk-forward, deflated Sharpe, block bootstrap,
+  honest report card, lockbox protocol) is reusable for any future stock-prediction experiment.</li>
+  <li><strong>The 60-subagent research deep dives</strong> (<a href="/research">/research</a>) lay out the
+  five hard open problems with concrete code recommendations: survivorship-bias closure,
+  encoder bake-off, lockbox protocol, transaction-cost calibration, path-dependent exits.</li>
+  <li><strong>The SMA250 systems-comparison test</strong> establishes a baseline that any future model
+  comparison can be checked against.</li>
+  <li><strong>The simple low-volatility momentum rule</strong> (rank_inv_60d_vol) is a real, deployable
+  strategy with 12% CAGR, −38% max DD, and Sharpe 0.61. It needed no AI.</li>
+</ul>
+
+<h2>What would change our minds?</h2>
+
+<div class="callout good">
+  <h4>The five things that would make us update toward "this works"</h4>
+  <ol>
+    <li>A frozen 2025 lockbox: predict 2025 picks using only 2024-and-earlier data, see the
+      result for the first time on 2026-01-01. If the lockbox confirms the in-sample numbers
+      within the noise band, that's evidence of real signal.</li>
+    <li>A pre-registered single configuration (not best-of-72) running forward for 6+ months in a
+      paper-trading account. If the realized fills show the simulator's bps estimates were
+      right, that's evidence the strategy can be implemented.</li>
+    <li>Survivorship-corrected data: rerun the whole thing on a delisted-history-inclusive
+      dataset (Polygon $30/mo or EODHD $20/mo). If the corrected CAGR is in the same ballpark
+      as our current numbers, the strategy survives that filter.</li>
+    <li>A successful comparison against simple-momentum baselines: explicitly demonstrate
+      that the AI strategy beats engineered features by &gt;2 percentage points of Sharpe ratio,
+      consistently across folds, with non-overlapping confidence intervals.</li>
+    <li>Replication by Greg's system (or any independent system) under matching cost
+      assumptions on the SMA250 baseline test. If the medians agree within tolerance, the
+      foundations are common; if not, that gap is where to debug.</li>
+  </ol>
+</div>
+
+<h2>What to do next</h2>
+
+<p>If you want to keep building:</p>
+<ul>
+  <li>Run the pre-registered 2025 lockbox via the existing infrastructure (<code>--unlock-2025</code>
+  flag on splits.py)</li>
+  <li>Plug yfinance into Polygon and re-run the universe construction for survivorship correction</li>
+  <li>Wire <code>scripts/forward_pick.py</code> to a weekly cron + Alpaca paper account</li>
+</ul>
+
+<p>If you want to make peace with the result:</p>
+<ul>
+  <li>Buy SPY in an IRA. It'll do about the same.</li>
+  <li>If you want a small-cap tilt with a real edge, sort by low volatility and hold ~25 names. That worked.</li>
+</ul>
+
+<h2>Where to go from here on this site</h2>
+
+<ul>
+  <li><a href="/runs">Results</a> &mdash; explore the raw run data interactively</li>
+  <li><a href="/flaws">Flaws &amp; Fixes</a> &mdash; the detailed critique with severity ratings</li>
+  <li><a href="/research">Research</a> &mdash; the 60-subagent deep dives on the five hard open problems</li>
+  <li><a href="/runs/new">New Run</a> &mdash; launch your own configuration if you want to experiment</li>
+  <li><a href="/glossary">Glossary</a> &mdash; every term used on this site, defined in plain English</li>
+</ul>
+
+<div class="nav-row">
+  <a href="/story/07_sma250" class="prev">
+    <span class="dir">← Previous</span>
+    <span class="title">07: The Systems-Comparison Test</span>
+  </a>
+  <a href="/story" class="next">
+    <span class="dir">↑ Back to</span>
+    <span class="title">Story index</span>
+  </a>
+</div>
+
+</div>
+{% endblock %}

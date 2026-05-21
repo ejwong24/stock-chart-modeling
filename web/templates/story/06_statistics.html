@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}06: Why It's Not Statistically Real{% endblock %}
+{% block content %}
+<div class="story-chapter">
+
+<span class="chapter-tag">Chapter 06 of 8</span>
+<h1>Why It's Not Statistically Real</h1>
+<p class="lede">
+  Even after honest reproduction, after realistic costs, after the falsification test &mdash;
+  the best strategy <em>still</em> looks like it beats the random median by a few percent.
+  Is that real? Three plain-language tools answer no.
+</p>
+
+<h2>Tool 1: Multiple-comparison correction (Deflated Sharpe)</h2>
+
+<p>If you flip a coin 7 times you have a 0.8% chance of getting 7 heads. Impressive.
+If you flip it 7,200 times you'll get 7-heads-in-a-row almost certainly. Not impressive.</p>
+
+<p>The original paper tested 72 configurations and reported the best one. The Deflated Sharpe
+Ratio (Bailey & López de Prado, 2014) is the formal correction: it raises the bar
+proportionally to the number of trials.</p>
+
+<figure>
+  <img src="/static/story/04_deflated_sharpe.png"
+       alt="Distribution of Sharpe ratios under null hypothesis, with observed and threshold marked">
+  <figcaption>
+    Under the null hypothesis (zero true skill), Sharpe ratios scatter around zero. With one trial,
+    a Sharpe of 0.51 looks impressive (grey curve). But with 108 trials, the <em>best</em> of those trials
+    will routinely reach 0.75-1.0 even with zero skill (red curve). The observed Sharpe of <strong>0.51</strong>
+    (blue line) doesn't clear the deflated threshold of <strong>0.75</strong> (orange line).
+  </figcaption>
+</figure>
+
+<div class="kpi-grid">
+  <div class="kpi accent">
+    <div class="label">Observed Sharpe</div>
+    <div class="value">0.510</div>
+  </div>
+  <div class="kpi warn">
+    <div class="label">Deflated threshold</div>
+    <div class="value">0.747</div>
+  </div>
+  <div class="kpi bad">
+    <div class="label">p-value (need ≥ 0.95)</div>
+    <div class="value">0.226</div>
+  </div>
+</div>
+
+<h2>Tool 2: Effective sample size (López de Prado)</h2>
+
+<p>The pipeline produced "1,104 trades." Sounds like a lot. But trades overlap massively:
+weekly entries, 40-day holds, ~25 positions open at any time. The trades aren't independent
+observations &mdash; they share holding periods.</p>
+
+<figure>
+  <img src="/static/story/07_effective_n.png"
+       alt="Bar chart showing 1,104 naive trade count vs 45 effective independent observations">
+  <figcaption>
+    López de Prado's "average uniqueness" metric divides each trade's effective contribution
+    by how many other trades overlap with it. For our run, 1,104 naive trades collapse to
+    <strong>45 independent observations</strong>. The standard error of any statistic is √(1104/45) ≈ <strong>5×</strong>
+    wider than the naive count implies.
+  </figcaption>
+</figure>
+
+<p>A naive 95% confidence interval based on 1,104 trades might span ±2%. The honest interval
+based on 45 effective observations spans ±10%. The "edge" that looked obvious shrinks into the
+noise.</p>
+
+<h2>Tool 3: Block bootstrap confidence intervals</h2>
+
+<p>The Sharpe ratio is a single number. The block bootstrap asks: <em>"if we'd run this
+experiment with a slightly different draw of the same data 10,000 times, how much
+would the answer wiggle?"</em></p>
+
+<p>We resample chunks of daily returns (chunks of 40 days, matching the holding period) and
+recompute CAGR/Sharpe/max-DD for each resampled history. The result is a 95% interval, not
+a point estimate.</p>
+
+<figure>
+  <img src="/static/story/10_confidence_intervals.png"
+       alt="Confidence interval chart again — every interval crosses zero">
+  <figcaption>
+    <strong>Every confidence interval crosses zero.</strong> The DINOv2 model's "+17.27% CAGR" headline
+    is point-estimate-bold, but the 95% range spans from <strong>−11.0%</strong> to <strong>+59.3%</strong>. The realistic-cost
+    engineered model's "+9.79%" is similarly inside a range that could be −8% in unlucky parallel
+    universes. We can't tell from this data whether the strategy has real edge or not.
+  </figcaption>
+</figure>
+
+<h2>The original "100th percentile vs 100 random seeds" framing</h2>
+
+<p>The original paper's flag-planting claim was "the model ended in the 100th percentile of
+100 random portfolios." That sounds like p &lt; 0.01. But it isn't, because:</p>
+
+<ol>
+  <li>The "best" model was already cherry-picked from 72 tries (so the framing should have been
+  "best of 72 trials beat the 100th percentile" &mdash; which happens 97.5% of the time under no skill).</li>
+  <li>100 random portfolios is a very small sample for the tail percentile.</li>
+  <li>Random portfolios in the same momentum-prefiltered universe inherit a lot of the model's exposure.</li>
+</ol>
+
+<p>The correct version of this test is <strong>Hansen's Superior Predictive Ability (SPA)</strong>, which
+is implemented in our pipeline. Running it on the realistic-cost data gives a p-value &gt; 0.05.</p>
+
+<figure>
+  <img src="/static/story/09_multiple_comparison.png"
+       alt="Bar chart of 72 trial outcomes from a null distribution, with the best highlighted">
+  <figcaption>
+    72 simulated "trial outcomes" drawn from a no-skill null distribution. The single tallest bar
+    (red) is what the original paper reported as "the model." It looks impressive in isolation.
+    The other 71 bars (grey) are the ones the paper didn't show. Their mean (dashed line) is
+    around the random baseline.
+  </figcaption>
+</figure>
+
+<h2>The honest report card</h2>
+
+<p>Once we put all three corrections together, we built an "honest report card" template that
+auto-generates from any run and refuses to print forbidden phrases like "best of K" or
+"100th percentile vs random seeds":</p>
+
+<figure>
+  <img src="/static/story/ss_report_card_full.png"
+       alt="Screenshot of the honest report card page in the web UI">
+  <figcaption>
+    The <a href="/runs/full/report-card">/runs/full/report-card</a> page in the live UI.
+    Every metric carries a confidence interval. Mandatory fields the original paper omitted
+    (effective N, deflated Sharpe p-value, baseline gap statistical significance) are filled
+    automatically. A built-in linter rejects cherry-picking framings before the report
+    can be shared.
+  </figcaption>
+</figure>
+
+<div class="callout bad">
+  <h4>The statistical bottom line</h4>
+  <p>The honest interpretation is: <strong>this strategy might have a real but small edge, OR it
+  might have no edge at all.</strong> Within the noise band, we cannot distinguish those two
+  hypotheses from one run on 7 years of data. To distinguish them, we'd need either (a) much more
+  data, or (b) a held-out 2025 lockbox that we promised in advance to use exactly once. We have
+  the infrastructure for both, but we haven't done them yet.</p>
+</div>
+
+<div class="nav-row">
+  <a href="/story/05_falsification" class="prev">
+    <span class="dir">← Previous</span>
+    <span class="title">05: The Falsification Test</span>
+  </a>
+  <a href="/story/07_sma250" class="next">
+    <span class="dir">Next →</span>
+    <span class="title">07: The Systems-Comparison Test</span>
+  </a>
+</div>
+
+</div>
+{% endblock %}

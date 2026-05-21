@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}04: Reality Bites: Costs{% endblock %}
+{% block content %}
+<div class="story-chapter">
+
+<span class="chapter-tag">Chapter 04 of 8</span>
+<h1>Reality Bites: Costs</h1>
+<p class="lede">
+  Every time you buy or sell a stock, you lose a tiny bit to spread, slippage,
+  commission, and (eventually) taxes. For the microcap names this strategy
+  loves, those costs are huge. Here's what happened when we turned them on.
+</p>
+
+<h2>Why costs matter so much here</h2>
+
+<p>The strategy buys ~5 stocks every week and holds for 40 trading days. That's
+roughly 6 round-trip turns per year. Each round-trip in a small-cap costs anywhere from
+20 to 200 basis points (0.2% to 2%) depending on:</p>
+
+<ul>
+  <li><strong>Bid-ask spread.</strong> You buy at the higher price, sell at the lower. For
+  microcaps the spread is often 50-200 bps just sitting there before you trade.</li>
+  <li><strong>Market impact.</strong> When your order is a noticeable fraction of a stock's
+  daily volume, the price moves <em>against</em> you. Big sellers go up. Big
+  buyers push the price up. This scales as the square root of your participation
+  rate — a well-studied model called Almgren-Chriss.</li>
+  <li><strong>Halts.</strong> Microcaps frequently get halted for news. About 2% of microcap
+  trade attempts fail outright.</li>
+  <li><strong>Trailing stops.</strong> We added an 18% trailing stop (exit if price drops 18% from peak since
+  buying). This reduces drawdowns but cuts some winners short.</li>
+</ul>
+
+<h2>The same 8 strategies, side-by-side</h2>
+
+<figure>
+  <img src="/static/story/03_cost_impact.png"
+       alt="Side-by-side bar charts: CAGR per strategy and max drawdown per strategy, no-cost vs realistic-cost">
+  <figcaption>
+    <strong>Left:</strong> CAGR drops everywhere under realistic costs, but DINOv2 (lgbm_image,
+    leftmost pair) got hit the hardest because it picks the most volatile microcaps where the
+    market-impact penalty is largest.
+    <strong>Right:</strong> the 18% trailing stop reduces max drawdowns by 5-14 percentage points
+    on most strategies. The catastrophic baselines (right side) crash so fast that
+    the stop barely catches them &mdash; they fall like waterfalls.
+  </figcaption>
+</figure>
+
+<h2>The damage in numbers</h2>
+
+<table class="compare-table">
+  <thead><tr>
+    <th>Strategy</th>
+    <th class="num">No-cost CAGR</th>
+    <th class="num">Realistic CAGR</th>
+    <th class="num">Δ</th>
+    <th class="num">Max DD improvement</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>lgbm_image</strong> (DINOv2)</td>
+      <td class="num">+17.27%</td>
+      <td class="num">+7.13%</td>
+      <td class="num neg">−10.13 pp</td>
+      <td class="num pos">+12 pp shallower</td>
+    </tr>
+    <tr>
+      <td><strong>lgbm_engineered</strong> (no images)</td>
+      <td class="num">+12.97%</td>
+      <td class="num pos">+9.79%</td>
+      <td class="num neg">−3.18 pp</td>
+      <td class="num pos">+12 pp shallower</td>
+    </tr>
+    <tr>
+      <td>rank_inv_60d_vol (low-vol)</td>
+      <td class="num">+12.01%</td>
+      <td class="num">+7.26%</td>
+      <td class="num neg">−4.74 pp</td>
+      <td class="num pos">+5 pp shallower</td>
+    </tr>
+    <tr>
+      <td>lr_baseline (matches original)</td>
+      <td class="num">+11.47%</td>
+      <td class="num">+5.12%</td>
+      <td class="num neg">−6.35 pp</td>
+      <td class="num pos">+14 pp shallower</td>
+    </tr>
+    <tr>
+      <td>rank_252d_return</td>
+      <td class="num">+8.87%</td>
+      <td class="num neutral">+0.80%</td>
+      <td class="num neg">−8.08 pp</td>
+      <td class="num">~0 pp</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout bad">
+  <h4>The biggest casualty</h4>
+  <p>The DINOv2 image stack lost <strong>10 percentage points of CAGR</strong> to realistic costs &mdash;
+  more than any other strategy. Why? It picks the most volatile, most thinly-traded
+  microcaps where impact is worst. Its "alpha" was being eaten alive by the very stocks
+  it loved.</p>
+</div>
+
+<h2>And the same equity curves, with realistic costs</h2>
+
+<figure>
+  <img src="/static/story/02b_equity_realistic.png"
+       alt="Equity curves for 8 strategies with realistic costs, 18% trailing stop, halt risk">
+  <figcaption>
+    Same chart format as chapter 3, but with the 18% trailing stop, Almgren-Chriss market
+    impact, and halt-risk simulation all turned on. Every curve is lower than its no-cost
+    twin, and the order has shuffled &mdash; <code>lgbm_engineered</code> (engineered features, no images) is
+    now the leader.
+  </figcaption>
+</figure>
+
+<h2>Capacity ceiling — and why this strategy can't scale</h2>
+
+<p>The numbers above are for a $100k account. As your account grows, your $4,000 positions
+become $40,000 positions ($1M AUM), then $400,000 positions ($10M AUM). But the median
+candidate stock has only ~$1.4M of daily trading volume. A $400k buy is 28% of daily
+volume &mdash; you'd move the price against yourself by hundreds of basis points.</p>
+
+<div class="kpi-grid">
+  <div class="kpi accent">
+    <div class="label">Capacity @ $100k</div>
+    <div class="value">~+14%</div>
+  </div>
+  <div class="kpi accent">
+    <div class="label">@ $1M</div>
+    <div class="value">~+12%</div>
+  </div>
+  <div class="kpi warn">
+    <div class="label">@ $10M</div>
+    <div class="value">~+3%</div>
+  </div>
+  <div class="kpi bad">
+    <div class="label">@ $100M+</div>
+    <div class="value">Negative</div>
+  </div>
+</div>
+
+<p>And these are <em>pre-tax</em> numbers. A 40-day-hold strategy realizes 100% short-term
+capital gains, which a high-bracket US individual will lose ~38-42% of. The
+$100k account's +14% becomes maybe +8% post-tax.</p>
+
+<div class="callout warn">
+  <h4>The pattern emerging</h4>
+  <p>Every honest correction we apply makes the strategy look worse. We're closing in on
+  the actual answer: <em>this is a high-noise, high-cost ML pipeline whose apparent edge
+  is mostly methodological artifact.</em> But we haven't yet asked the most important
+  question &mdash; does the AI part actually help? Next chapter has the falsification test.</p>
+</div>
+
+<div class="nav-row">
+  <a href="/story/03_reproduction" class="prev">
+    <span class="dir">← Previous</span>
+    <span class="title">03: The Honest Reproduction</span>
+  </a>
+  <a href="/story/05_falsification" class="next">
+    <span class="dir">Next →</span>
+    <span class="title">05: The Falsification Test</span>
+  </a>
+</div>
+
+</div>
+{% endblock %}
