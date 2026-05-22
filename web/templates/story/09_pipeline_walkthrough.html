@@ -127,6 +127,187 @@ the chart's shape.</p>
   the same image our backtest's DINOv2 stack processed.</p>
 </div>
 
+<h2>Stage 4b — what we actually do with the 384 numbers (and why we essentially throw them away)</h2>
+
+<p>This is the deep-dive a lot of readers ask for. Once DINOv2 spits out a
+384-dim vector for BNTX, where does it go and how much of it survives by the
+time we get to a probability?</p>
+
+<h3>The actual 384 numbers for BNTX on 2021-07-02</h3>
+
+<p>Here's BNTX's real DINOv2 embedding, reshaped to a 16×24 grid for visualization.
+Each cell is one of the 384 floating-point activations the encoder produced.
+Mean ≈ 0, std ≈ 2.5, range roughly [−7, +8]. There's no human-interpretable
+meaning to any individual dimension; the model just learned them.</p>
+
+<figure>
+  <img src="/static/story/pw_d1_dinov2_raw.png"
+       alt="Heatmap of the 384-dimensional DINOv2 output for BNTX 2021-07-02">
+  <figcaption>
+    The raw <strong>384-dim DINOv2 output</strong> for BNTX on 2021-07-02, the actual numbers
+    pulled from <code>reports/full/dinov2_embeddings.npy</code> at row 52,833.
+    These are the activations of the [CLS] token in the final transformer layer.
+    They don't correspond to any human concept; they're an opaque "vector summary"
+    of the chart image.
+  </figcaption>
+</figure>
+
+<h3>Step 1 — compress 384 numbers down to 64 via PCA</h3>
+
+<p>384 dimensions is too many for our downstream linear model on ~58k training
+samples. So inside each walk-forward fold, the pipeline:</p>
+
+<ol>
+  <li><strong>Z-scores</strong> the 384 dimensions on the training fold
+      (StandardScaler — mean=0, std=1 per dim)</li>
+  <li><strong>Fits PCA to 64 components</strong> on the training fold</li>
+  <li><strong>Applies the same fitted scaler + PCA</strong> to the test fold
+      (no peeking at test data when fitting — this is the leakage protection)</li>
+</ol>
+
+<p>Two important details about that PCA step:</p>
+
+<ul>
+  <li><strong>It's unsupervised.</strong> PCA finds directions of maximum
+      <em>variance</em>, not directions of maximum <em>predictive signal</em>.
+      Those may or may not be the same thing.</li>
+  <li><strong>It's per-fold.</strong> Each test year gets its own PCA fitted
+      from its own training data. The PCA basis changes from fold to fold,
+      so the 64-dim "image features" aren't directly comparable across years.</li>
+</ul>
+
+<figure>
+  <img src="/static/story/pw_d2_pca_variance.png"
+       alt="Cumulative variance explained by PCA components, showing PCA-64 retains 91.5%">
+  <figcaption>
+    On our real training fold (25,164 BNTX-adjacent anchors), <strong>PCA-64 retains 91.5% of the
+    total variance</strong> of the 384-dim embeddings. The other 8.5% gets discarded.
+    That's <em>almost certainly</em> dominated by noise — but PCA has no way to know
+    if a small variance direction was predictive. It just keeps the big-variance ones.
+  </figcaption>
+</figure>
+
+<h3>BNTX's 384 numbers, after PCA: 64 values</h3>
+
+<figure>
+  <img src="/static/story/pw_d3_bntx_pca64.png"
+       alt="Bar chart of the 64 PCA components for BNTX, sorted by variance explained">
+  <figcaption>
+    BNTX's 384-dim embedding projected onto the 64 leading principal components.
+    Component 1 (leftmost) is the highest-variance direction in the training data —
+    typically captures "average chart density" or similar coarse statistics. The tail
+    end represents progressively finer detail. The values are roughly in [−7, +10],
+    matching the spread of the raw embedding.
+  </figcaption>
+</figure>
+
+<h3>Step 2 — combine with 64 volume PCA features</h3>
+
+<p>In parallel with the image track, the pipeline takes the past 252 trading days
+of volume, applies <code>zscore(log1p(volume))</code>, then runs the SAME
+StandardScaler-then-PCA-64 routine on it. So we end up with another 64-dim vector.</p>
+
+<p>The two are concatenated: <strong>64 (image) + 64 (volume) = 128 features.</strong>
+Then ONE more StandardScaler is applied to the concatenation (to put both halves
+on a common scale).</p>
+
+<h3>Step 3 — feed 128 features into logistic regression → 1 probability</h3>
+
+<p>The final stage is shockingly simple given everything that came before. A
+LogisticRegression with <code>C=1</code>, <code>class_weight='balanced'</code>
+(because positives are only 5–15% of training anchors), and L2 regularization
+collapses the 128 features into ONE number: the predicted probability that
+<code>ret_40d_ge_25pct = 1</code>.</p>
+
+<p>An isotonic calibration step on a held-out 10% slice of the training fold
+maps the raw probability to a calibrated probability comparable across folds.</p>
+
+<h3>The total information funnel</h3>
+
+<figure>
+  <img src="/static/story/pw_d5_info_funnel.png"
+       alt="Bar chart showing how the dimensionality collapses at each stage">
+  <figcaption>
+    BNTX's data shrinks by <strong>~5 orders of magnitude</strong> as it flows through the
+    pipeline. Each compression throws away information we hope is mostly noise but
+    can't formally verify.
+  </figcaption>
+</figure>
+
+<h3>And there's a parallel "engineered" track that does NONE of this</h3>
+
+<figure>
+  <img src="/static/story/pw_d4_decision_tree.png"
+       alt="Diagram of the three parallel tracks and their pipelines">
+  <figcaption>
+    The full decision tree. <strong>The engineered track (right) doesn't render an image,
+    doesn't call DINOv2, doesn't run PCA — it just hands 40 hand-computed numbers
+    straight to LightGBM.</strong> And after realistic costs (Chapter 5), <em>that</em> track
+    wins, while the DINOv2+PCA pipeline loses. The 384 → 64 → 128 → 1 path on the
+    left does a lot of work for results that turn out to be inferior.
+  </figcaption>
+</figure>
+
+<h3>So why is DINOv2 kept in the pipeline at all?</h3>
+
+<div class="callout">
+  <h4>Three reasons we still compute the DINOv2 track even though it loses</h4>
+  <ol>
+    <li><strong>To prove it loses.</strong> The
+      <a href="/story/05_falsification">falsification test</a> only works if we
+      run the AI side-by-side with the non-AI side. Removing it would mean we
+      couldn't show the comparison.</li>
+    <li><strong>To match the original document.</strong> The whole point of this project
+      was to reproduce a specific paper's pipeline honestly. We need to faithfully
+      reproduce what they did to assess what they claimed.</li>
+    <li><strong>For future research.</strong> The 91.5% variance retained by PCA-64 isn't
+      necessarily the same as the predictive signal retained. A finer encoder
+      (1D PatchTST, custom CNN trained from scratch, or per-fold supervised
+      dimensionality reduction) could plausibly extract real signal that PCA
+      throws away. See
+      <a href="/research/02_encoder_bakeoff">Research Problem 2</a>
+      for the proposed bake-off.</li>
+  </ol>
+</div>
+
+<h3>Concrete numbers for this specific trade</h3>
+
+<table class="compare-table">
+<thead><tr><th>Pipeline stage</th><th class="num">Dims for BNTX</th><th>What happened</th></tr></thead>
+<tbody>
+<tr><td>Raw price window</td><td class="num">252</td><td>252 close prices, 2020-07-06 to 2021-07-02</td></tr>
+<tr><td>Rendered chart image</td><td class="num">150,528</td><td>224×224×3 RGB pixels (the lossy 2D projection)</td></tr>
+<tr><td>DINOv2 embedding</td><td class="num">384</td><td>compressed to 384 floats by frozen ViT-S/14</td></tr>
+<tr><td>PCA-64 image features</td><td class="num">64</td><td>91.5% of variance retained; 8.5% discarded</td></tr>
+<tr><td>Concat with volume PCA-64</td><td class="num">128</td><td>image+volume joint feature</td></tr>
+<tr><td>LR probability</td><td class="num">1</td><td><strong>0.720</strong> (rank 10 of 373 that week)</td></tr>
+</tbody>
+</table>
+
+<h3>What about the volume track? Same treatment.</h3>
+
+<p>Volume gets the exact same StandardScaler → PCA-64 compression as the image
+embeddings do, just starting from a 252-dim vector instead of 384. Same 91%-of-variance
+trade-off: most variance is kept, all individual-day-volume detail is lost.
+But here it matters less because the engineered track also computes volume
+statistics (<code>log_dollar_vol_z252</code>, <code>vol_ratio_20_252</code>,
+<code>vol_trend_slope_60d</code>) directly from the 252-dim vector, so we have
+both a compressed view and a hand-built view of volume.</p>
+
+<h3>Why class_weight='balanced'</h3>
+
+<p>The training labels have ~5–15% positive rate (only ~1 in 10 candidates rises 25%
+in 40 days). Without class weighting, a logistic regression maximizing log-loss
+would learn "always predict 0" — which has 90% accuracy but zero discriminative
+power. Setting <code>class_weight='balanced'</code> reweights the loss so positives
+and negatives count equally, forcing the model to actually learn the boundary.</p>
+
+<p>The downside, as the <a href="/story/05_falsification">falsification chapter</a>
+notes, is that the output probabilities aren't calibrated to the true rate
+anymore — they're calibrated to a 50-50 prior. That's fine for RANKING (top-5 per
+week) but breaks any absolute "buy only if P > 0.6" rule. The isotonic calibration
+step partially fixes this but doesn't fully reverse the class-weight distortion.</p>
+
 <h2>Stage 5 — the model's probability score</h2>
 
 <p>For each of the 373 eligible stocks on 2021-07-02, LightGBM outputs a
