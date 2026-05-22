@@ -124,7 +124,8 @@ def test_trial_count_missing_file(tmp_path):
 
 def test_audit_concurrent_threads(tmp_path):
     """Concurrent audit writes from 8 threads must all land + be valid JSON."""
-    import threading, json as _j
+    import threading
+    import json as _j
     p = tmp_path / "audit.jsonl"
     def worker(tag, n):
         for i in range(n):

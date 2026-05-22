@@ -1,0 +1,31 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = [".venv", "data", "reports"]
+
+[tool.ruff.lint]
+# Start strict on dangerous-bug categories, lenient on style.
+select = [
+    "F",      # pyflakes — unused imports/vars, undefined names
+    "E9",     # syntax errors
+    "W6",     # invalid escape sequences
+]
+# Ignored: cosmetic line-length, multi-statement, etc. — not bug-bearing.
+ignore = [
+    "E401",   # multiple-imports-on-one-line (style)
+    "E402",   # module-level import (some scripts modify sys.path first)
+    "E701",   # multiple-statements-on-one-line-colon (style)
+    "E702",   # multiple-statements-on-one-line-semicolon (style)
+    "E731",   # lambda-assignment (style)
+    "E741",   # ambiguous-variable-name (one-letter loop variables)
+    "F541",   # f-string-without-placeholder (style)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["F841"]   # tests sometimes create unused fixtures by design
+"scripts/build_story_visuals.py" = ["F841"]   # boxplot return values + label vars are useful for readability
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::UserWarning:sklearn.utils.validation",
+]

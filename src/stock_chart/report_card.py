@@ -8,7 +8,9 @@ The original document's '100th percentile, 61.1% CAGR' headline FAILS
 this linter — that's the whole point.
 """
 from __future__ import annotations
-import json, re, sys
+import json
+import re
+import sys
 from pathlib import Path
 
 from . import lockbox as _lockbox
@@ -128,7 +130,6 @@ def auto_fill_from_run(run_dir: Path, project_root: Path,
     if not summaries:
         return {}
     best = max(summaries, key=lambda x: x.get("end_equity", 0))
-    rb = headline.get("random_baseline", {}) or {}
     dsr = headline.get("deflated_sharpe", {}) or {}
 
     # Find best simple baseline

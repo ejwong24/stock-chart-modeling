@@ -8,11 +8,13 @@ Run with:
 Then visit http://127.0.0.1:3340/ (or http://<your-tailscale-host>:3340/).
 """
 from __future__ import annotations
-import json, os, signal, subprocess, time
+import json
+import os
+import signal
+import subprocess
+import time
 from pathlib import Path
-from typing import Optional
 
-import numpy as np
 import pandas as pd
 from fastapi import FastAPI, Form, HTTPException, Request, Query
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse

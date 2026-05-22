@@ -26,8 +26,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.patches import FancyBboxPatch, Rectangle
-from matplotlib.lines import Line2D
+from matplotlib.patches import Rectangle
 
 PROJECT = Path(__file__).resolve().parents[1]
 OUT = PROJECT / "web" / "static" / "story"
@@ -277,7 +276,7 @@ def chart_random_distribution(run_tag: str, fname: str, title_suffix: str):
     fig, ax = plt.subplots(figsize=(9, 4.8))
     ax.hist(rnd["end_equity"], bins=30, color=PALETTE["text_dim"],
              edgecolor=PALETTE["border"], alpha=0.85,
-             label=f"200 random portfolios, same rules")
+             label="200 random portfolios, same rules")
 
     p50 = rnd["end_equity"].median()
     p95 = rnd["end_equity"].quantile(0.95)

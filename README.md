@@ -21,12 +21,14 @@ Given daily OHLCV data for ~3000–6000 US tickers (2016–2026), it:
 5. Trains three side-by-side model tracks per fold (matched-original
    LR, LightGBM on images, LightGBM on engineered features only) using
    PURGED walk-forward with embargo.
-6. Runs a portfolio simulator with realistic costs, slippage, and
-   liquidity constraints.
+6. Runs a portfolio simulator with realistic costs (Almgren-Chriss
+   square-root market impact), slippage, halt-risk, a configurable
+   trailing stop, and liquidity constraints.
 7. Compares the model against five simple-momentum baselines and 200+
    random-seed portfolios.
 8. Reports honest stats: deflated Sharpe ratio, block-bootstrap
-   p-values, percentile within random distribution.
+   p-values, López de Prado effective sample size, post-tax CAGR,
+   percentile within random distribution.
 
 ## Key corrections vs original document
 

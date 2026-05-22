@@ -32,6 +32,9 @@ def load_model(num_threads: int = 4) -> nn.Module:
 
 
 def _preprocess_batch(images: list[Image.Image]) -> torch.Tensor:
+    if len(images) == 0:
+        # Empty input → empty NCHW tensor with correct trailing dims (224×224×3)
+        return torch.empty((0, 3, 224, 224), dtype=torch.float32)
     arr = np.stack([np.asarray(im.convert("RGB"), dtype=np.float32) for im in images])
     arr = arr / 255.0
     mean = np.array(IMAGENET_MEAN, dtype=np.float32).reshape(1, 1, 1, 3)

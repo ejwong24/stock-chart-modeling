@@ -7,7 +7,9 @@ bars to the most-recent trading day. We exploit five distress signatures
 config/delisted_seed.txt without paying for Polygon/EODHD.
 """
 from __future__ import annotations
-import glob, os, sys
+import glob
+import os
+import sys
 import pandas as pd
 
 ADJ_DIR  = "data/adjusted"

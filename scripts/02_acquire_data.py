@@ -1,6 +1,8 @@
 """Bulk-download daily OHLCV via yfinance for all tickers in the working universe."""
 from __future__ import annotations
-import sys, json, time
+import sys
+import json
+import time
 from pathlib import Path
 import pandas as pd
 

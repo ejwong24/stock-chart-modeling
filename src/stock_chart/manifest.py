@@ -1,7 +1,10 @@
 """Reproducibility manifest writer."""
 from __future__ import annotations
 from pathlib import Path
-import hashlib, json, sys, subprocess, time
+import hashlib
+import json
+import sys
+import time
 import importlib.metadata as imd
 
 

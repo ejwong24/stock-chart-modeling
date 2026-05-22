@@ -137,7 +137,7 @@ def main():
     _log(f"  loaded {len(price_lookup)}", t0)
 
     sim_cfg = make_sim_config()
-    _log(f"sim config: zero costs, no ADV filter, no trailing stop, integer shares", t0)
+    _log("sim config: zero costs, no ADV filter, no trailing stop, integer shares", t0)
 
     all_summaries = []
 

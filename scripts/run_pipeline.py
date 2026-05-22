@@ -10,7 +10,10 @@ Usage:
 For full reproduction, omit --n-tickers (uses entire universe).
 """
 from __future__ import annotations
-import argparse, json, sys, time, hashlib
+import argparse
+import json
+import sys
+import time
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -52,7 +55,6 @@ def _render_and_embed(anchor_meta: pd.DataFrame, price_lookup: dict,
 
     Avoids the OOM that hit the previous accumulate-then-embed implementation.
     """
-    import torch
     from stock_chart.embed_dinov2 import load_model, embed_arrays
     model = load_model(num_threads=4)
     _log(f"DINOv2 loaded; rendering+embedding {len(anchor_meta)} charts (streaming)", t0)
@@ -168,7 +170,7 @@ def main():
     if len(labels_df) == 0:
         print("No labels generated. Exiting.")
         return
-    labels_df.to_parquet(out_dir / f"labels.parquet", index=False)
+    labels_df.to_parquet(out_dir / "labels.parquet", index=False)
 
     # 2. Anchor meta and price lookup
     anchor_meta = labels_df[["ticker", "anchor_date", "anchor_idx", "anchor_close",
@@ -243,7 +245,7 @@ def main():
         tr_idx = tr_df.index.values
         te_idx = te_df.index.values
         y_tr = y_all[tr_idx]
-        y_te = y_all[te_idx]
+        # te_idx labels are not used (we predict on test, don't train on it)
         if y_tr.sum() < 10 or (len(y_tr) - y_tr.sum()) < 10:
             _log(f"  fold {year}: degenerate class balance, skipping", t0)
             continue
@@ -339,7 +341,7 @@ def main():
     rnd_summary = rb.run_random_seeds(anchor_meta, price_lookup, sim_cfg, horizon=H,
                                         n_seeds=args.random_seeds,
                                         base_seed=c["seeds"]["random_baseline_base_seed"])
-    rnd_summary.to_parquet(out_dir / f"random_seeds_summary.parquet", index=False)
+    rnd_summary.to_parquet(out_dir / "random_seeds_summary.parquet", index=False)
 
     # 8. Stats
     summary_df = pd.DataFrame(summaries)

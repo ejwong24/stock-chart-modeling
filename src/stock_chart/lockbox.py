@@ -12,7 +12,11 @@ Decision rule: the FIRST 2025 evaluation for any (H, T, model) tuple is the
 headline — good or bad, no iteration.
 """
 from __future__ import annotations
-import hashlib, json, os, subprocess, time
+import hashlib
+import json
+import os
+import subprocess
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 

@@ -14,7 +14,6 @@ This module:
 """
 from __future__ import annotations
 from dataclasses import dataclass
-import numpy as np
 import pandas as pd
 
 
@@ -42,6 +41,20 @@ def split(df: pd.DataFrame, fold: FoldSpec,
     res_col = resolution_col_template.format(H=fold.horizon)
     if res_col not in df.columns:
         raise KeyError(f"missing column {res_col} for horizon {fold.horizon}")
+
+    # Defensive: strip tz from anchor + resolution columns. Mixing tz-aware
+    # input with tz-naive Timestamp bounds raises TypeError downstream.
+    df = df.copy()
+    if pd.api.types.is_datetime64_any_dtype(df[anchor_col]):
+        try:
+            df[anchor_col] = df[anchor_col].dt.tz_localize(None)
+        except (AttributeError, TypeError):
+            pass  # already tz-naive
+    if res_col in df.columns and pd.api.types.is_datetime64_any_dtype(df[res_col]):
+        try:
+            df[res_col] = df[res_col].dt.tz_localize(None)
+        except (AttributeError, TypeError):
+            pass
 
     test_start, test_end = _yearly_bounds(df, fold.test_year)
 

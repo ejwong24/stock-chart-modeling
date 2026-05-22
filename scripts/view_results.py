@@ -7,10 +7,10 @@ Usage:
     python scripts/view_results.py full
 """
 from __future__ import annotations
-import sys, json
+import sys
+import json
 from pathlib import Path
 import pandas as pd
-import numpy as np
 
 PROJECT = Path(__file__).resolve().parents[1]
 

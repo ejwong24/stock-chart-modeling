@@ -17,8 +17,7 @@ Output:
 - trade blotter, daily equity series, summary metrics dict.
 """
 from __future__ import annotations
-from dataclasses import dataclass, field
-from collections import defaultdict
+from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
@@ -124,7 +123,6 @@ def simulate(scores: pd.DataFrame, price_lookup: dict[str, pd.DataFrame],
     blotter = []
 
     anchor_groups = df.groupby("anchor_date", sort=True)
-    new_buys_this_anchor = []
 
     open_tickers_set = set()
     halt_rng = np.random.default_rng(cfg.halt_risk_seed)

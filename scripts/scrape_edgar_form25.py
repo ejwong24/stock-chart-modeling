@@ -15,7 +15,10 @@ Usage:
 Expect ~30-45 minutes for the full 2016-2026 scrape.
 """
 from __future__ import annotations
-import argparse, json, re, sys, time
+import argparse
+import re
+import sys
+import time
 from pathlib import Path
 import requests
 import pandas as pd
