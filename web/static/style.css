@@ -316,3 +316,209 @@ header nav a.story-link:hover {
 .compare-table .pos { color: var(--good); font-weight: 600; }
 .compare-table .neg { color: var(--bad); font-weight: 600; }
 .compare-table .neutral { color: var(--warn); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE / RESPONSIVE
+   Tested on Pixel 9 and Pixel 10 (412×892 CSS px)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Make wide tables horizontally scrollable when their content would
+   overflow the viewport. Applies to all tables inside main, including
+   markdown-rendered tables in .md. */
+main table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  white-space: nowrap;
+}
+.md table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
+}
+
+/* Prevent pre/code blocks from forcing horizontal scroll on the whole page */
+pre, code { overflow-wrap: break-word; word-wrap: break-word; }
+pre { white-space: pre; }
+
+/* Images never overflow */
+img { max-width: 100%; height: auto; }
+
+/* Tablet breakpoint */
+@media (max-width: 900px) {
+  main { padding: 16px 14px; }
+  .story-chapter { max-width: 100%; }
+  .story-hero { padding: 22px 22px; }
+  .story-hero h1 { font-size: 26px; }
+  .story-chapter h1 { font-size: 26px; }
+}
+
+/* ─── Phone breakpoint (Pixel 9/10 portrait) ─── */
+@media (max-width: 600px) {
+
+  /* Type scale */
+  html, body { font-size: 14.5px; }
+  h1 { font-size: 22px !important; }
+  h2 { font-size: 18px; }
+  h3 { font-size: 14px; }
+
+  /* Top nav — collapse brand to icon + horizontal-scroll the links.
+     Tap-friendly 36px target on each link. */
+  header.topnav {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 8px 10px;
+    gap: 6px;
+  }
+  .brand a { gap: 6px; }
+  .brand .title { font-size: 14px; }
+  .brand .tagline { display: none; }
+  /* The .nav-wrap div gets a fade gradient on its right edge to hint at scrollability. */
+  header nav {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 4px;
+    padding-bottom: 4px;
+    /* hide horizontal scroll bar but keep functional */
+    scrollbar-width: thin;
+    /* fade out on the right so users see there's more nav */
+    mask-image: linear-gradient(to right, black 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+  }
+  header nav::-webkit-scrollbar { height: 4px; }
+  header nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  header nav a {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    font-size: 13.5px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  /* Main + panels — tighter padding */
+  main { padding: 12px 10px; max-width: 100%; }
+  .panel { padding: 14px 14px; border-radius: 8px; }
+
+  /* Hero */
+  .story-hero { padding: 18px 16px; }
+  .story-hero h1 { font-size: 22px !important; margin: 0 0 6px; }
+  .story-hero .lede { font-size: 14px; }
+
+  /* Story chapter content */
+  .story-chapter .lede { font-size: 15px; padding-left: 10px; }
+  .story-chapter h2 { font-size: 17px; margin-top: 26px; }
+  .story-chapter h3 { font-size: 14px; margin-top: 16px; }
+  .story-chapter p { font-size: 14.5px; line-height: 1.65; }
+  .story-chapter figure { margin: 16px 0; padding: 10px; }
+  .story-chapter figure figcaption { font-size: 12.5px; line-height: 1.5; }
+
+  /* Story chapter nav-row — stack vertically */
+  .story-chapter .nav-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .story-chapter .nav-row a {
+    width: 100%; min-width: 0;
+  }
+  .story-chapter .nav-row .next { align-items: flex-start; text-align: left; }
+
+  /* Cards stack to single column on phone */
+  .cards, .chapter-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .card, .chapter-card { padding: 14px 16px; }
+  .card .big { font-size: 22px; }
+  .chapter-card h3 { font-size: 16px; }
+  .chapter-card .preview { font-size: 13px; }
+
+  /* KPI grid — 2-up on phone instead of 4-up */
+  .kpi-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .kpi { padding: 10px 12px; }
+  .kpi .value { font-size: 18px; }
+  .kpi .label { font-size: 10px; }
+
+  /* Forms — labels stack above inputs */
+  form .row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin: 14px 0;
+  }
+  form .row label {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 600;
+  }
+  form input[type="text"],
+  form input[type="number"] {
+    font-size: 16px;       /* >= 16px prevents iOS Safari zoom; safe on Android */
+    padding: 10px 12px;
+  }
+  form .hint { font-size: 12px; }
+
+  /* Tables — make them readable in the horizontal scroll container */
+  main table { font-size: 12.5px; }
+  main table th, main table td { padding: 6px 8px; }
+  /* For the compare-table specifically, let it wrap (it's narrow enough) */
+  .compare-table { white-space: normal; font-size: 13px; }
+  .compare-table th, .compare-table td { padding: 6px 8px; vertical-align: top; }
+
+  /* Tags / buttons — tap-friendly */
+  .btn {
+    padding: 11px 16px;
+    font-size: 14px;
+    min-height: 40px;
+    display: inline-flex; align-items: center;
+  }
+  .tag { font-size: 10.5px; padding: 3px 7px; }
+
+  /* Help / callout boxes */
+  .help, .warning, .callout, .compare-table caption {
+    padding: 10px 12px;
+    font-size: 13.5px;
+  }
+  .story-chapter .callout {
+    padding: 12px 14px;
+    margin: 16px 0;
+    font-size: 13.5px;
+  }
+
+  /* Code blocks — smaller, scroll horizontally */
+  pre { font-size: 12px; padding: 10px 12px; }
+  code { font-size: 12px; }
+
+  /* Plotly charts — let them shrink to viewport */
+  #chart, .chart { height: 360px; }
+
+  /* Markdown content (flaws, research, readme) — tighten */
+  .md h1 { font-size: 22px; }
+  .md h2 { font-size: 17px; margin-top: 24px; }
+  .md h3 { font-size: 14px; }
+  .md p, .md li { font-size: 14px; line-height: 1.6; }
+  .md blockquote { padding: 6px 10px; font-size: 13.5px; }
+  .md table { font-size: 12.5px; }
+
+  /* Footer — slightly less verbose */
+  footer { padding: 18px 14px; font-size: 12px; line-height: 1.6; }
+}
+
+/* Very narrow phones (under 380px) — Pixel mini-mode, foldable inner display */
+@media (max-width: 380px) {
+  html, body { font-size: 14px; }
+  h1 { font-size: 20px !important; }
+  main { padding: 10px 8px; }
+  .panel { padding: 12px 12px; }
+  .kpi-grid { grid-template-columns: 1fr; }
+}
+
+/* Landscape phone — let nav use the extra width */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 500px) {
+  header.topnav { flex-direction: row; }
+}
