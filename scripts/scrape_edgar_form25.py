@@ -52,7 +52,9 @@ def search(forms: list[str], start: str, end: str) -> list[dict]:
     return out
 
 
-_TICKER_RE = re.compile(r"\(([A-Z][A-Z0-9.\-]{0,5}(?:,\s*[A-Z][A-Z0-9.\-]{0,5})*)\)")
+# SPAC display names have tokens like 'CNDA-UN', 'CNDA-WT' (7+ chars), so we
+# allow up to 9 chars total per ticker. CIK strings are rejected post-match.
+_TICKER_RE = re.compile(r"\(([A-Z][A-Z0-9.\-]{0,9}(?:,\s*[A-Z][A-Z0-9.\-]{0,9})*)\)")
 
 
 def extract_tickers_from_display(display_name: str) -> list[str]:

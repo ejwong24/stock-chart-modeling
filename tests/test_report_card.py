@@ -86,6 +86,21 @@ def test_auto_fill_returns_empty_for_empty_summaries(tmp_path):
     assert out == {}
 
 
+def test_auto_fill_with_partial_summary_no_crash(tmp_path):
+    """Bug #5 regression: summary dict missing 'cagr' / 'sharpe' / 'max_dd'
+    must not crash. Should fall back to 0 for the missing fields."""
+    import json
+    rd = tmp_path / "partial"
+    rd.mkdir()
+    (rd / "headline.json").write_text(
+        json.dumps({"summaries": [{"track": "foo", "end_equity": 100_000}]})
+    )
+    out = rc.auto_fill_from_run(rd, tmp_path)
+    assert out.get("tag") == "partial"
+    assert "cagr_point" in out
+    assert "+0.00%" in out["cagr_point"]
+
+
 def test_auto_fill_on_real_full_run():
     """Auto-fill should work on our real reports/full directory."""
     project = Path(__file__).resolve().parents[1]

@@ -138,9 +138,10 @@ def auto_fill_from_run(run_dir: Path, project_root: Path,
     gap = best.get("cagr", 0) - best_baseline.get("cagr", 0)
 
     # Block-bootstrap CIs on best track equity
-    eq_path = run_dir / f"equity_{best['track']}.parquet"
+    best_track = best.get("track", "unknown")
+    eq_path = run_dir / f"equity_{best_track}.parquet" if best_track != "unknown" else None
     cagr_ci = sharpe_ci = mdd_ci = "N/A"
-    if eq_path.exists():
+    if eq_path is not None and eq_path.exists():
         eq_df = pd.read_parquet(eq_path)
         ci = _stats.bootstrap_cagr_ci(eq_df, n_resamples=2000, block_size=40)
         cagr_ci = (f"[{ci['cagr_ci'][0]*100:+.1f}%, {ci['cagr_ci'][2]*100:+.1f}%]")
@@ -150,8 +151,8 @@ def auto_fill_from_run(run_dir: Path, project_root: Path,
     # Effective sample size from blotter
     n_eff = 0
     se_widen = 1.0
-    blotter_path = run_dir / f"blotter_{best['track']}.parquet"
-    if blotter_path.exists():
+    blotter_path = run_dir / f"blotter_{best_track}.parquet" if best_track != "unknown" else None
+    if blotter_path is not None and blotter_path.exists():
         blot = pd.read_parquet(blotter_path)
         try:
             n_eff = _stats.effective_sample_size(blot, hold_days=40)
@@ -169,15 +170,15 @@ def auto_fill_from_run(run_dir: Path, project_root: Path,
         "prereg_hash": prereg_hash,
         "prereg_date": "auto-generated (no prereg)",
         "multi_comp": f"Deflated Sharpe (N_trials={n_trials})",
-        "cagr_point": f"{best['cagr']*100:+.2f}%",
+        "cagr_point": f"{best.get('cagr', 0)*100:+.2f}%",
         "cagr_ci": cagr_ci,
-        "sharpe_point": f"{best['sharpe']:+.2f}",
+        "sharpe_point": f"{best.get('sharpe', 0):+.2f}",
         "sharpe_ci": sharpe_ci,
         "dsr_value": f"{dsr.get('observed_sharpe_annualized', 0):+.3f}",
         "dsr_pvalue": f"{dsr.get('deflated_sharpe_p_value_significant', 0):.3f}",
         "spa_p": "(run reality_check_spa to fill)",
         "spa_reps": "5000",
-        "mdd_point": f"{best['max_dd']*100:.2f}%",
+        "mdd_point": f"{best.get('max_dd', 0)*100:.2f}%",
         "mdd_ci": mdd_ci,
         "best_baseline": (f"{best_baseline.get('track', 'n/a')} "
                           f"({best_baseline.get('cagr', 0)*100:+.2f}%)"),

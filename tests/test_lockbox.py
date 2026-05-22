@@ -120,3 +120,39 @@ def test_trial_count_skips_blank_lines_and_bad_json(tmp_path):
 def test_trial_count_missing_file(tmp_path):
     """Missing file returns 1 (conservative default)."""
     assert lb.trial_count(tmp_path / "missing.jsonl") == 1
+
+
+def test_audit_concurrent_threads(tmp_path):
+    """Concurrent audit writes from 8 threads must all land + be valid JSON."""
+    import threading, json as _j
+    p = tmp_path / "audit.jsonl"
+    def worker(tag, n):
+        for i in range(n):
+            lb.audit(p, f"{tag}_{i}", {"payload": "x" * 80})
+    threads = [threading.Thread(target=worker, args=(f"t{j}", 25)) for j in range(8)]
+    for t in threads: t.start()
+    for t in threads: t.join()
+    lines = [l for l in p.read_text().splitlines() if l.strip()]
+    assert len(lines) == 200  # 8 threads × 25 writes
+    # Every line is valid JSON
+    for line in lines:
+        d = _j.loads(line)
+        assert "event" in d
+
+
+def test_log_trial_concurrent_threads(tmp_path):
+    """Concurrent trial-registry appends must be lossless."""
+    import threading
+    p = tmp_path / "trials.jsonl"
+    def worker(model):
+        for i in range(15):
+            lb.log_trial(p, config={"model": model, "label": f"lab_{i}",
+                                      "horizon_d": 40, "threshold_q": 0.25,
+                                      "universe": "us"},
+                          headline_sharpe=1.0, n_obs=100)
+    threads = [threading.Thread(target=worker, args=(f"m{j}",)) for j in range(4)]
+    for t in threads: t.start()
+    for t in threads: t.join()
+    lines = [l for l in p.read_text().splitlines() if l.strip()]
+    assert len(lines) == 60  # 4 × 15
+    assert lb.trial_count(p) == 60

@@ -21,9 +21,15 @@ REQUIRED_COLS = ["Open", "High", "Low", "Close", "Volume"]
 
 
 def _normalize_one(df: pd.DataFrame) -> pd.DataFrame:
+    # Defensive: bail out cleanly on empty or schema-less inputs (yfinance
+    # occasionally returns these for delisted/invalid tickers).
+    if df is None or len(df) == 0 or len(df.columns) == 0:
+        return pd.DataFrame(columns=["date"] + [c.lower() for c in REQUIRED_COLS])
     out = df.dropna(how="all").copy()
     out.columns = [str(c).title() for c in out.columns]
     out = out[[c for c in REQUIRED_COLS if c in out.columns]]
+    if "Close" not in out.columns or len(out) == 0:
+        return pd.DataFrame(columns=["date"] + [c.lower() for c in REQUIRED_COLS])
     out = out.dropna(subset=["Close"])
     out.index = pd.to_datetime(out.index).tz_localize(None)
     out.index.name = "date"
