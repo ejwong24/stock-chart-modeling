@@ -369,6 +369,39 @@ def story_chapter(request: Request, chapter: str):
     return templates.TemplateResponse(request, f"story/{chapter}.html", {})
 
 
+PIPELINE_DEEPDIVES = {
+    "01_dinov2_architecture": "How DINOv2 ViT-S/14 actually works",
+    "02_pca_math": "What PCA is doing, and why per-fold matters",
+    "03_engineered_features": "The 40 engineered features — what each one is and BNTX's value",
+    "04_logistic_regression": "Logistic regression internals — 128 numbers → 1 probability",
+    "05_volume_processing": "Volume processing — log1p, z-score, and PCA again",
+    "06_simulator_loop": "The simulator's per-day inner loop — exact ordering and why it matters",
+    "07_ma250_prefilter": "The Close > 1.5 × SMA250 prefilter — what it does and why",
+    "08_walkforward_embargo": "Walk-forward + embargo math, with the BNTX-2021 fold worked out",
+    "09_almgren_chriss": "The Almgren-Chriss square-root impact model",
+    "10_deflated_sharpe": "Deflated Sharpe Ratio — the math behind the threshold",
+    "11_trailing_stop_interactions": "The trailing stop, the horizon exit, and what happens when both fire",
+    "12_reproducibility_seeds": "Every random seed and where it lives",
+}
+
+
+@app.get("/story/09/{slug}", response_class=HTMLResponse)
+def pipeline_deepdive(request: Request, slug: str):
+    """Render a chapter-9 deep-dive subsection."""
+    if slug not in PIPELINE_DEEPDIVES:
+        raise HTTPException(404, f"deep-dive '{slug}' not found")
+    p = PROJECT / "RESEARCH" / "pipeline_deepdives" / f"{slug}.md"
+    if not p.exists():
+        raise HTTPException(404, f"missing markdown for {slug}")
+    return templates.TemplateResponse(request, "pipeline_deepdive.html", {
+        "title": PIPELINE_DEEPDIVES[slug],
+        "subtitle": "Pipeline deep-dive · linked from /story/09",
+        "markdown": p.read_text(),
+        "slug": slug,
+        "deepdives": PIPELINE_DEEPDIVES,
+    })
+
+
 @app.get("/research/{slug}", response_class=HTMLResponse)
 def research_detail(request: Request, slug: str):
     p = PROJECT / "RESEARCH" / f"{slug}.md"

@@ -81,15 +81,18 @@ def test_story_chapter_referenced_pngs_exist():
 
 
 def test_story_chapter_nav_links_resolve():
-    """Each chapter's <a href='/story/...'> should point to another existing chapter."""
+    """Each chapter's <a href='/story/...'> should point to a real chapter or subsection."""
     sdir = PROJECT / "web" / "templates" / "story"
     valid_chapters = {p.stem for p in sdir.glob("*.html")}
     valid_chapters.add("")  # /story (index)
+    # Chapter-9 deep-dive subsections (validated by file presence)
+    deepdive_dir = PROJECT / "RESEARCH" / "pipeline_deepdives"
+    valid_deepdives = {f"09/{p.stem}" for p in deepdive_dir.glob("*.md")}
     for tpl in sdir.glob("*.html"):
         text = tpl.read_text()
         refs = re.findall(r'href="/story/([^"]+)"', text)
         for r in refs:
-            assert r in valid_chapters, \
+            assert r in valid_chapters or r in valid_deepdives, \
                 f"{tpl.name} links to /story/{r} which doesn't exist"
 
 
@@ -110,6 +113,38 @@ def test_research_index_lists_all_five_problems():
     keywords = ["survivorship", "encoder", "lockbox", "cost", "path-dependent"]
     missing = [k for k in keywords if k not in text]
     assert not missing, f"INDEX.md missing: {missing}"
+
+
+def test_pipeline_deepdives_all_present():
+    """All 12 chapter-9 deep-dive markdown files exist with non-trivial content."""
+    d = PROJECT / "RESEARCH" / "pipeline_deepdives"
+    expected = [
+        "01_dinov2_architecture", "02_pca_math", "03_engineered_features",
+        "04_logistic_regression", "05_volume_processing", "06_simulator_loop",
+        "07_ma250_prefilter", "08_walkforward_embargo", "09_almgren_chriss",
+        "10_deflated_sharpe", "11_trailing_stop_interactions",
+        "12_reproducibility_seeds",
+    ]
+    for slug in expected:
+        p = d / f"{slug}.md"
+        assert p.exists(), f"missing deep-dive markdown: {slug}.md"
+        text = p.read_text()
+        assert len(text) > 500, f"{slug}.md too short ({len(text)} chars)"
+        assert text.startswith("# "), f"{slug}.md must start with H1"
+
+
+def test_chapter_9_links_to_all_deepdives():
+    """Chapter 9 main page should link to every deep-dive subsection."""
+    p = PROJECT / "web" / "templates" / "story" / "09_pipeline_walkthrough.html"
+    text = p.read_text()
+    for slug in [
+        "01_dinov2_architecture", "02_pca_math", "03_engineered_features",
+        "04_logistic_regression", "05_volume_processing", "06_simulator_loop",
+        "07_ma250_prefilter", "08_walkforward_embargo", "09_almgren_chriss",
+        "10_deflated_sharpe", "11_trailing_stop_interactions",
+        "12_reproducibility_seeds",
+    ]:
+        assert f"/story/09/{slug}" in text, f"chapter 9 missing link to /story/09/{slug}"
 
 
 def test_gitignore_excludes_large_artifacts():

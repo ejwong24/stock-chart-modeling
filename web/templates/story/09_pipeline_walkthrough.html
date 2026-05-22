@@ -426,6 +426,148 @@ mechanics ended up buying it as part of a diversified cohort.</p>
   count. The Sharpe is real but not significant after deflation.</p>
 </div>
 
+<h2 id="drill-deeper">📚 Drill deeper — 12 subsections</h2>
+
+<p>Every stage in this chapter has a dedicated deep-dive page with the math,
+the design rationale, and the BNTX-specific numbers worked out. Each is a
+~1,000-word focused write-up; pick the one you have a question about.</p>
+
+<div class="cards" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+
+  <a class="chapter-card" href="/story/09/01_dinov2_architecture">
+    <span class="num">DEEP DIVE 01 · STAGE 4</span>
+    <h3>How DINOv2 ViT-S/14 actually works</h3>
+    <p class="preview">
+      Vision transformer patches, attention, the [CLS] token, why DINOv2 (self-distillation)
+      and not CLIP or supervised ImageNet, what "frozen" means, why this is out-of-distribution
+      for line charts.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/02_pca_math">
+    <span class="num">DEEP DIVE 02 · STAGE 4B</span>
+    <h3>What PCA is doing, and why per-fold matters</h3>
+    <p class="preview">
+      Eigendecomposition, variance vs predictive signal (with a concrete toy example),
+      why fit-on-train-only avoids leakage, and 7 alternatives (PLS, LDA, ICA, sparse PCA, kernel
+      PCA, random projection, autoencoder).
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/03_engineered_features">
+    <span class="num">DEEP DIVE 03 · STAGE 3</span>
+    <h3>The 40 engineered features — what each one is</h3>
+    <p class="preview">
+      All 40 features grouped into 6 economic buckets with formulas and BNTX's actual value
+      on 2021-07-02. Reading the cascade <code>ratio_ma20 &lt; 1</code>, <code>ratio_ma50 &gt; 1</code>,
+      <code>ratio_ma200 &gt;&gt; 1</code> as the fingerprint of a healthy uptrend.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/04_logistic_regression">
+    <span class="num">DEEP DIVE 04 · STAGE 5</span>
+    <h3>Logistic regression — 128 numbers → 1 probability</h3>
+    <p class="preview">
+      Sigmoid math, cross-entropy loss, L2 with C=1.0, lbfgs solver, why class_weight='balanced'
+      breaks absolute probability interpretation, and what isotonic calibration recovers.
+      BNTX's 0.720 is a RANK, not a probability.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/05_volume_processing">
+    <span class="num">DEEP DIVE 05 · STAGE 4B</span>
+    <h3>Volume — log1p, z-score, PCA again</h3>
+    <p class="preview">
+      Why log1p handles zero-volume days. Why z-score over the trailing 252 (not globally)
+      makes microcaps and megacaps comparable. Why we concat instead of stacking two models.
+      The awkward redundancy with engineered volume features.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/06_simulator_loop">
+    <span class="num">DEEP DIVE 06 · SIMULATOR</span>
+    <h3>The simulator's per-day inner loop</h3>
+    <p class="preview">
+      The exact 5-step ordering — trailing stop check, close-due, MTM, record equity, entry —
+      and why every adjacent pair has a load-bearing dependency. Conservation invariant:
+      cash + Σ(shares × close) ≡ equity, every step.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/07_ma250_prefilter">
+    <span class="num">DEEP DIVE 07 · STAGE 2</span>
+    <h3>The Close > 1.5 × SMA250 prefilter</h3>
+    <p class="preview">
+      Why 250 days, why 1.5×, what % of universe survives at each anchor (5.7% on 2021-07-02;
+      &lt;2% during March 2020), and how it interacts with the random baseline — making
+      "beats random" a much weaker claim than it sounds.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/08_walkforward_embargo">
+    <span class="num">DEEP DIVE 08 · LEAKAGE</span>
+    <h3>Walk-forward + embargo, with BNTX's fold</h3>
+    <p class="preview">
+      The exact dates: the model that scored BNTX on 2021-07-02 was trained on anchors from
+      2017-01 through ≈2020-09-01. The embargo dropped 4 calendar months. Why the × 1.6
+      trading-to-calendar conversion. ASCII timeline.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/09_almgren_chriss">
+    <span class="num">DEEP DIVE 09 · COSTS</span>
+    <h3>The Almgren-Chriss square-root impact model</h3>
+    <p class="preview">
+      The square-root law of market impact. Why η=0.142 and β=0.5. Worked example: BNTX
+      ($524M ADV) costs ~0.15 bps; a $2M-ADV small-cap costs ~28 bps round-trip; a
+      $200k-ADV microcap costs ~90 bps. Why lgbm_image lost 10pp of CAGR to this term.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/10_deflated_sharpe">
+    <span class="num">DEEP DIVE 10 · STATS</span>
+    <h3>Deflated Sharpe Ratio — the math behind the threshold</h3>
+    <p class="preview">
+      Bailey & López de Prado (2014). The expected max of N i.i.d. standard normals.
+      Lo's variance correction for skew + kurt. Concrete numbers for our N=108 reproduction:
+      observed daily SR ≈ 0.032 vs threshold ≈ 0.058 → PSR ≈ 0.23, not significant.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/11_trailing_stop_interactions">
+    <span class="num">DEEP DIVE 11 · EXITS</span>
+    <h3>The trailing stop and the horizon exit interaction</h3>
+    <p class="preview">
+      One exit path, two ways to set the date. Edge cases: stop_pct=0 disables, stop_pct=1
+      never fires. Why the implementation fills at today's close (slight optimism vs the
+      next-day-open intent). BNTX's path with stop=18%: did it fire mid-hold?
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/12_reproducibility_seeds">
+    <span class="num">DEEP DIVE 12 · DETERMINISM</span>
+    <h3>Every random seed and where it lives</h3>
+    <p class="preview">
+      Full inventory of every RNG in the codebase. Three rules for adding a new RNG safely.
+      Why DINOv2 inference is deterministic without a torch seed. What's NOT in the seed
+      chain (yfinance HTTP, wall clocks). The bit-equality guarantee.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+</div>
+
 <h2>Try this yourself</h2>
 
 <p>You can pick any (ticker, anchor_date) pair from our scores parquet and walk

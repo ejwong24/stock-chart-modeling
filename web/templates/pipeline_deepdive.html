@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <h1>{{ title }}</h1>
+  {% if subtitle %}<p class="muted">{{ subtitle }}</p>{% endif %}
+  <p class="muted" style="margin-top:6px">
+    <a href="/story/09_pipeline_walkthrough">← back to the pipeline walkthrough</a>
+  </p>
+</div>
+
+<div class="panel md" id="md-host"></div>
+
+<div class="panel">
+  <h3 style="margin-top:0">Other pipeline deep-dives</h3>
+  <ul style="columns: 2; column-gap: 24px; line-height: 1.7;">
+  {% for s, t in deepdives.items() %}
+    <li{% if s == slug %} style="font-weight:600;color:var(--accent)"{% endif %}>
+      <a href="/story/09/{{ s }}">{{ t }}</a>
+      {% if s == slug %} ← you are here{% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+</div>
+
+<script>
+const md = {{ markdown|tojson }};
+document.getElementById("md-host").innerHTML = marked.parse(md);
+</script>
+
+{% endblock %}

@@ -35,6 +35,15 @@ GET_200.extend(f"/research/{s}" for s in [
     "04_costs_capacity", "05_path_dependent_exits",
 ])
 
+# Chapter 9 pipeline deep-dive subsections
+GET_200.extend(f"/story/09/{s}" for s in [
+    "01_dinov2_architecture", "02_pca_math", "03_engineered_features",
+    "04_logistic_regression", "05_volume_processing", "06_simulator_loop",
+    "07_ma250_prefilter", "08_walkforward_embargo", "09_almgren_chriss",
+    "10_deflated_sharpe", "11_trailing_stop_interactions",
+    "12_reproducibility_seeds",
+])
+
 # Run-detail routes — only test if run exists
 PROJECT = Path(__file__).resolve().parents[1]
 EXISTING_RUNS = [p.name for p in (PROJECT / "reports").iterdir()
