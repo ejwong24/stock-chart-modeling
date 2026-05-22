@@ -361,7 +361,7 @@ def story_chapter(request: Request, chapter: str):
     """Render a single story chapter."""
     valid = {"01_claim", "02_audit", "03_reproduction", "04_costs",
               "05_falsification", "06_statistics", "07_sma250",
-              "08_bottom_line"}
+              "08_bottom_line", "09_pipeline_walkthrough"}
     if chapter not in valid:
         raise HTTPException(404, f"chapter '{chapter}' not found")
     return templates.TemplateResponse(request, f"story/{chapter}.html", {})

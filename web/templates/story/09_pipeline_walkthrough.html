@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+{% block title %}09: Pipeline Walkthrough{% endblock %}
+{% block content %}
+<div class="story-chapter">
+
+<span class="chapter-tag">Chapter 09 of 9 · deep dive</span>
+<h1>The Pipeline, Stage by Stage</h1>
+<p class="lede">
+  All the chapters so far have shown <em>aggregate</em> results. This one
+  picks a single real trade — <strong>BioNTech on 2021-07-02 → 2021-08-30, +53.7%</strong> —
+  and walks through every stage of the pipeline that touched it. Real data, real
+  features, the actual chart image our AI saw, and the actual outcome.
+</p>
+
+<div class="kpi-grid">
+  <div class="kpi accent">
+    <div class="label">Ticker</div>
+    <div class="value">BNTX</div>
+  </div>
+  <div class="kpi accent">
+    <div class="label">Anchor date</div>
+    <div class="value">Jul 2 '21</div>
+  </div>
+  <div class="kpi good">
+    <div class="label">Forward 40d</div>
+    <div class="value">+53.7%</div>
+  </div>
+  <div class="kpi warn">
+    <div class="label">Model rank</div>
+    <div class="value">#10/373</div>
+  </div>
+</div>
+
+<h2>Stage 1 — the input</h2>
+
+<p>For every Friday in our backtest, the pipeline looks at every US stock's
+prior 252 trading days (about one calendar year) of closing prices and volumes.
+For BNTX on Friday 2021-07-02, that window covers the year from 2020-07-06 to
+2021-07-02 — the post-COVID-vaccine rally.</p>
+
+<figure>
+  <img src="/static/story/pw_1_input_window.png"
+       alt="BNTX price chart 2020-07 to 2021-07 with MA250 overlay and volume below">
+  <figcaption>
+    BNTX's 252-day input window. The stock 3×'d from $65 to $221 over the year as
+    the COVID-19 vaccine rolled out. The orange dashed line is the 250-day moving
+    average ($115.53). BNTX's close-to-MA250 ratio of <strong>1.914×</strong> easily clears the
+    pipeline's <strong>1.5× threshold</strong>, so it enters the candidate pool for that week.
+  </figcaption>
+</figure>
+
+<h2>Stage 2 — the prefilter funnel</h2>
+
+<p>Out of all ~6,700 US common stocks in our universe, only the ones with
+<code>Close &gt; 1.5 × 250-day MA</code> are eligible. This is the pipeline's
+"momentum prefilter." On 2021-07-02, just <strong>373 stocks</strong> passed.
+Then the simulator applies an ADV filter (≥ $5M daily dollar volume) and a
+no-duplicate-ticker rule. After those, the simulator buys the top 5 by score.</p>
+
+<figure>
+  <img src="/static/story/pw_2_funnel.png"
+       alt="Funnel diagram showing 6692 stocks narrowing to 5 actually bought">
+  <figcaption>
+    Two filters stack before any model score gets used: the momentum prefilter
+    (1.5× MA250) and the liquidity floor (ADV ≥ $5M). On 2021-07-02 those took
+    the universe from <strong>6,692 → 373 → ~28 → 5 buys</strong>.
+  </figcaption>
+</figure>
+
+<h2>Stage 3 — engineered features</h2>
+
+<p>For each eligible stock we compute 40 features that summarize its recent
+behavior: returns at multiple time horizons, volatility, drawdowns, distance
+from moving averages, slope, swing count, volume z-score, and more. These are
+the inputs to the LightGBM model. <em>Note: this is the <strong>engineered-features</strong>
+track that won the falsification test in <a href="/story/05_falsification">Chapter 5</a>;
+the DINOv2 image track sees a different feature representation.</em></p>
+
+<figure>
+  <img src="/static/story/pw_3_features.png"
+       alt="Bar chart of 16 engineered features for BNTX on 2021-07-02">
+  <figcaption>
+    16 of the 40 engineered features computed for BNTX on the anchor date. The big
+    positive values you'd expect from a strong-momentum name are visible:
+    <code>ret_252d = +1.23</code> (123% in a year), <code>ratio_ma200 = 1.74</code>
+    (74% above the 200-day MA). The strategy is looking for stocks that already
+    went up; this one fits the pattern.
+  </figcaption>
+</figure>
+
+<div class="callout">
+  <h4>How features feed the model</h4>
+  <p>LightGBM (a gradient-boosted-trees model) is shown these 40 numbers per
+  (ticker, anchor) example, plus the binary label "did the stock go up ≥25% in
+  the next 40 trading days?". It learns combinations of features that historically
+  predicted the label. Critically: it's only trained on data from BEFORE the test
+  fold (see <a href="/story/02_audit">the audit on walk-forward leakage</a>).</p>
+</div>
+
+<h2>Stage 4 — chart image rendering (DINOv2 track)</h2>
+
+<p>In parallel with the engineered-features track, the pipeline renders the
+same 252-day price window as a deterministic 224×224 grayscale chart image and
+feeds it through Meta's DINOv2 ViT-S/14 image encoder (a 22-million-parameter
+vision model). The output is a 384-dimensional embedding that summarizes
+the chart's shape.</p>
+
+<figure>
+  <img src="/static/story/pw_4_chart_render.png"
+       alt="Side by side: raw price chart on the left, 224x224 rendered chart on the right">
+  <figcaption>
+    <strong>Left:</strong> the same price data you'd see in a brokerage app.
+    <strong>Right:</strong> the actual 224×224 image the AI sees. The pipeline uses a
+    <strong>fixed log-y axis</strong> (-90% to +1000% from the start of the window) so a stock
+    that went up 5% looks visibly different from one that went up 500% — fixing a
+    flaw in the original document where charts were per-stock-autoscaled.
+  </figcaption>
+</figure>
+
+<div class="callout warn">
+  <h4>Why this stage exists at all</h4>
+  <p>The hypothesis was that DINOv2's image features would catch "chart patterns"
+  that hand-built engineered features miss (cup-and-handle, ascending triangles,
+  etc.). The <a href="/story/05_falsification">falsification test</a> found that
+  this didn't actually help — the engineered-features track beat the image track
+  after realistic costs. We keep the image rendering here for completeness; it's
+  the same image our backtest's DINOv2 stack processed.</p>
+</div>
+
+<h2>Stage 5 — the model's probability score</h2>
+
+<p>For each of the 373 eligible stocks on 2021-07-02, LightGBM outputs a
+probability between 0 and 1: "how likely is this stock to be up ≥25% in the
+next 40 trading days?" Higher = more bullish.</p>
+
+<figure>
+  <img src="/static/story/pw_5_score_dist.png"
+       alt="Histogram of 373 LightGBM probability scores on 2021-07-02, with BNTX marked">
+  <figcaption>
+    Distribution of LightGBM probabilities across all 373 eligible stocks that
+    Friday. BNTX scores <strong>0.720</strong> — well above the median (~0.55) but only the
+    <strong>10th-highest</strong> on the day. Many stocks the model was <em>more</em> confident about.
+  </figcaption>
+</figure>
+
+<h3>The simulator's actual buy decision</h3>
+
+<p>The simulator wants to buy the top 5 by score. But several of the top-9 stocks
+get knocked out by the ADV filter (too illiquid) or the no-duplicate rule (the
+ticker was already in the portfolio from a prior week's pick). So the actual
+buy cohort on 2021-07-02 became:</p>
+
+<div class="table-wrap">
+<table class="compare-table">
+<thead><tr>
+<th>Rank</th><th>Ticker</th><th class="num">Score</th><th>Status</th><th class="num">Forward 40d</th>
+</tr></thead>
+<tbody>
+<tr><td>1</td><td><strong>DBI</strong></td><td class="num">1.000</td><td class="pos">BOUGHT</td><td class="num neg">−3.7%</td></tr>
+<tr><td>2</td><td>USIO</td><td class="num">0.864</td><td class="neg">ADV-filtered</td><td class="num">—</td></tr>
+<tr><td>3</td><td><strong>FNKO</strong></td><td class="num">0.821</td><td class="pos">BOUGHT</td><td class="num neg">−10.3%</td></tr>
+<tr><td>4</td><td>BESS</td><td class="num">0.821</td><td class="neg">ADV-filtered</td><td class="num">—</td></tr>
+<tr><td>5</td><td>TDAY</td><td class="num">0.821</td><td class="neutral">skipped (~ADV)</td><td class="num">—</td></tr>
+<tr><td>6</td><td>BTE</td><td class="num">0.818</td><td class="neg">ADV-filtered</td><td class="num">—</td></tr>
+<tr><td>7</td><td>IRIX</td><td class="num">0.765</td><td class="neg">ADV-filtered</td><td class="num">—</td></tr>
+<tr><td>8</td><td>UONEK</td><td class="num">0.765</td><td class="neutral">skipped</td><td class="num">—</td></tr>
+<tr><td>9</td><td>UXIN</td><td class="num">0.765</td><td class="neg">already held</td><td class="num">—</td></tr>
+<tr><td>10</td><td><strong>BNTX</strong></td><td class="num">0.720</td><td class="pos">BOUGHT</td><td class="num pos">+53.7%</td></tr>
+<tr><td>11</td><td>PACB</td><td class="num">0.720</td><td class="neutral">already held</td><td class="num">—</td></tr>
+<tr><td>12</td><td><strong>NEGG</strong></td><td class="num">0.720</td><td class="pos">BOUGHT</td><td class="num neg">−5.7%</td></tr>
+<tr><td>13</td><td>DNN</td><td class="num">0.708</td><td class="neutral">already held</td><td class="num">—</td></tr>
+<tr><td>14</td><td><strong>AA</strong></td><td class="num">0.708</td><td class="pos">BOUGHT</td><td class="num pos">+15.9%</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout">
+  <h4>Notice what just happened</h4>
+  <p>The ADV filter is doing real work. Of the 7 highest-scoring stocks, <strong>4 were
+  knocked out as too illiquid to actually trade</strong>. If we'd ignored that filter and
+  bought USIO + BESS + BTE + IRIX, we'd have ended up with an average forward
+  return of <em>−10.4%</em> across those 4 — a disaster. The liquidity filter is
+  protecting us from the exact kind of micro-caps the model latches onto.</p>
+</div>
+
+<h2>Stage 6 — the cohort outcomes</h2>
+
+<figure>
+  <img src="/static/story/pw_6_cohort_outcomes.png"
+       alt="Forward 40-day returns for the 5 stocks bought on 2021-07-02">
+  <figcaption>
+    The 5 stocks actually bought on 2021-07-02 had a cohort average forward
+    return of <strong>+10.0%</strong>. But that's entirely driven by BNTX (+53.7%) and AA (+15.9%).
+    <strong>Without BNTX, the cohort average drops to −0.9%</strong> — losing money. One outlier
+    winner can dominate the whole week's outcome, and the model's "highest confidence"
+    pick (DBI at score 1.00) lost money.
+  </figcaption>
+</figure>
+
+<h2>Stage 7 — what actually happened to BNTX</h2>
+
+<p>Entry on 2021-07-02 at $221.07. Exit exactly 40 trading days later, on
+2021-08-30, at $340.49. A +54% return in 8 weeks. The model didn't predict
+this specifically — BNTX wasn't even its top-9 pick — but the simulator's
+mechanics ended up buying it as part of a diversified cohort.</p>
+
+<figure>
+  <img src="/static/story/pw_7_forward.png"
+       alt="BNTX price chart from entry through 40-day exit, showing +54% gain">
+  <figcaption>
+    BNTX's path during the hold period. The first two weeks were down (red
+    shaded area). Then the delta-variant news lifted COVID-vaccine names and
+    BNTX surged 100% above the entry price by mid-August, before pulling back
+    to a +54% gain at the 40-day forced exit.
+  </figcaption>
+</figure>
+
+<h2>What the ADV filter saved us from</h2>
+
+<figure>
+  <img src="/static/story/pw_8_adv_filter.png"
+       alt="Bar chart of 4 high-scoring stocks knocked out by ADV filter, with their fates">
+  <figcaption>
+    The ADV filter looks like a boring engineering detail — "skip stocks with less
+    than $5M average daily volume" — but it's doing huge work. Three of the four
+    high-confidence picks it rejected went on to lose money over the next 40 days
+    (BESS: −28%, BTE: −13%, USIO: −4%), one had a small win it missed
+    (IRIX: +9%). On net, ADV filtering this week saved roughly 10 percentage
+    points of cohort return.
+  </figcaption>
+</figure>
+
+<h2>The lesson</h2>
+
+<div class="callout good">
+  <h4>What this one trade tells us about the strategy</h4>
+  <p>The model is <strong>noisy</strong>: its top-1 confidence pick that week (DBI at
+  probability 1.00) was a loser. The simulator's <strong>execution mechanics</strong> (ADV
+  filter, no-duplicate rule, position-size cap) do far more work than the
+  raw ranking does. And the <strong>actual winners are right-tail surprises</strong> — BNTX
+  was a rank-10 candidate that happened to ride a news catalyst (delta variant).</p>
+  <p>This explains the <a href="/story/06_statistics">statistics chapter's</a>
+  result: across thousands of weeks, the cohort means are dominated by a few outliers,
+  not by reliable ranking. Effective sample size is much smaller than naive trade
+  count. The Sharpe is real but not significant after deflation.</p>
+</div>
+
+<h2>Try this yourself</h2>
+
+<p>You can pick any (ticker, anchor_date) pair from our scores parquet and walk
+through these same stages:</p>
+
+<pre>
+cd ~/projects/stock_chart_modeling
+source .venv/bin/activate
+
+python -c "
+import pandas as pd
+sc = pd.read_parquet('reports/full/scores_lgbm_engineered.parquet')
+blot = pd.read_parquet('reports/full/blotter_lgbm_engineered.parquet')
+
+# Find the biggest winners we actually bought
+print(blot.sort_values('trade_return_pct', ascending=False).head(10).to_string())
+"
+</pre>
+
+<p>Pick another trade and re-run the visual generator with a different
+<code>TICKER</code> and <code>ANCHOR</code> in
+<code>scripts/build_pipeline_walkthrough_visuals.py</code>. Every stage in this
+chapter is reproducible from the data in the repo.</p>
+
+<h2>Other examples worth exploring</h2>
+
+<table class="compare-table">
+<thead><tr><th>Ticker</th><th>Anchor</th><th class="num">Forward 40d</th><th>Story</th></tr></thead>
+<tbody>
+<tr><td>MRNA</td><td>2021-03-05</td><td class="num pos">+40.4%</td><td>The other big COVID vaccine play, same era</td></tr>
+<tr><td>VET</td><td>2022-01-07</td><td class="num pos">+67.9%</td><td>Energy boom (Vermilion Energy, 2022)</td></tr>
+<tr><td>BTU</td><td>2022-02-18</td><td class="num pos">+84.6%</td><td>Coal squeeze (Peabody, 2022)</td></tr>
+<tr><td>IONQ</td><td>2023-05-19</td><td class="num pos">+74.3%</td><td>Quantum computing hype, 2023</td></tr>
+<tr><td>AEHR</td><td>2023-05-19</td><td class="num pos">+49.8%</td><td>AI/semis play, same week as IONQ</td></tr>
+<tr><td>APLD</td><td>2025-08-01</td><td class="num pos">+76.5%</td><td>AI infrastructure, 2025</td></tr>
+<tr><td>BESS</td><td>2021-07-02</td><td class="num neg">−28.0%</td><td>A model-ranked top-5 that lost 28% (ADV-filtered out of our cohort)</td></tr>
+</tbody>
+</table>
+
+<p>Each of these would tell a slightly different story about how the model
+ranked them, what the simulator did, and what actually happened. The pattern
+holds: the strategy is dominated by a few right-tail winners, the simulator's
+filters do most of the heavy lifting, and the average week's results don't
+look much like the eye-catching winners.</p>
+
+<div class="nav-row">
+  <a href="/story/08_bottom_line" class="prev">
+    <span class="dir">← Previous</span>
+    <span class="title">08: The Bottom Line</span>
+  </a>
+  <a href="/story" class="next">
+    <span class="dir">↑ Back to</span>
+    <span class="title">Story index</span>
+  </a>
+</div>
+
+</div>
+{% endblock %}
