@@ -15,6 +15,7 @@ via isotonic regression so that scores are comparable across folds.
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
+import warnings
 import numpy as np
 import pandas as pd
 import joblib
@@ -23,6 +24,15 @@ from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.isotonic import IsotonicRegression
 from sklearn.model_selection import train_test_split
+
+# LightGBM's predict_proba on numpy arrays raises a benign "no feature names"
+# warning even when the model was fit with numpy. Silence to keep test/CI
+# output clean. (Not a correctness issue; only the message is noisy.)
+warnings.filterwarnings(
+    "ignore",
+    message=r".*X does not have valid feature names.*",
+    category=UserWarning,
+)
 
 try:
     from lightgbm import LGBMClassifier

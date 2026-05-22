@@ -215,9 +215,17 @@ def simulate(scores: pd.DataFrame, price_lookup: dict[str, pd.DataFrame],
             t = row["ticker"]
             if cfg.no_duplicate_ticker and t in open_tickers_set:
                 continue
-            adv = float(row.get("adv20_usd", 0.0) or 0.0)
-            if adv < cfg.min_adv_usd:
+            # Defensive: skip candidates with NaN/missing critical fields.
+            # NaN comparisons in Python return False, so without this any
+            # NaN adv would silently pass the ADV filter and crash later.
+            raw_adv = row.get("adv20_usd", 0.0)
+            adv = float(raw_adv) if raw_adv is not None else 0.0
+            if not np.isfinite(adv) or adv < cfg.min_adv_usd:
                 continue
+            raw_close = row.get("anchor_close")
+            if raw_close is None or not np.isfinite(float(raw_close)) or float(raw_close) <= 0:
+                continue
+            entry_close = float(raw_close)
             equity_now = mtm
             target_usd = min(equity_now * cfg.max_position_pct,
                              cfg.max_adv_pct * adv)
@@ -225,7 +233,6 @@ def simulate(scores: pd.DataFrame, price_lookup: dict[str, pd.DataFrame],
                 target_usd = min(target_usd, cash)
             if target_usd < 100:
                 continue
-            entry_close = float(row["anchor_close"])
             # Halt risk: simulate ~halt-rate-tier probability of fill failure
             if cfg.halt_risk_enabled:
                 tier = _market_cap_tier(adv)
@@ -237,6 +244,8 @@ def simulate(scores: pd.DataFrame, price_lookup: dict[str, pd.DataFrame],
                               if cfg.use_almgren_chriss_impact
                               else cfg.slippage_bps_each_side)
             fill = entry_close * _slippage_mult(slip_bps_entry, "buy")
+            if not np.isfinite(fill) or fill <= 0:
+                continue  # defensive: nonsensical fill price
             shares = int(target_usd // fill)
             if shares <= 0:
                 continue

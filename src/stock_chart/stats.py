@@ -131,11 +131,17 @@ def effective_sample_size(blotter_df: pd.DataFrame, hold_days: int = 40) -> floa
     positions, returns ~44 — not 1,104. The 5x widening of SE(Sharpe)
     collapses many naive-significant results.
     """
+    if blotter_df is None or len(blotter_df) == 0:
+        return 0.0
     df = blotter_df.copy()
     if "exit_date" not in df.columns and "entry_date" in df.columns:
         df["exit_date"] = pd.to_datetime(df["entry_date"]) + pd.Timedelta(days=hold_days)
     df["entry_date"] = pd.to_datetime(df["entry_date"])
     df["exit_date"] = pd.to_datetime(df["exit_date"])
+    # Defensive: drop rows with NaT dates that would crash pd.date_range
+    df = df.dropna(subset=["entry_date", "exit_date"])
+    if len(df) == 0:
+        return 0.0
     days = pd.date_range(df["entry_date"].min(), df["exit_date"].max(), freq="B")
     if len(days) == 0:
         return 0.0

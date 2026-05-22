@@ -79,9 +79,55 @@ def test_simulator_keys_unchanged():
     assert needed <= set(out["summary"].keys())
 
 
+def test_nan_candidates_silently_skipped():
+    """Bug #3 regression: NaN anchor_close OR NaN adv20_usd → skip, not crash."""
+    dates = pd.date_range("2024-01-02", periods=200, freq="B")
+    rng = np.random.default_rng(0)
+    closes = 100.0 * np.cumprod(1 + rng.normal(0.001, 0.02, 200))
+    price_lookup = {t: pd.DataFrame({"date": dates, "close": closes})
+                     for t in ("FOO", "BAR", "BAZ")}
+    anchor, res = dates[60], dates[100]
+    scores = pd.DataFrame([
+        {"ticker": "FOO", "anchor_date": anchor, "score": 1.0,
+         "anchor_close": np.nan, "adv20_usd": 10e6, "anchor_idx": 60,
+         "resolution_date": res},
+        {"ticker": "BAR", "anchor_date": anchor, "score": 0.9,
+         "anchor_close": 100.0, "adv20_usd": np.nan, "anchor_idx": 60,
+         "resolution_date": res},
+        {"ticker": "BAZ", "anchor_date": anchor, "score": 0.8,
+         "anchor_close": 100.0, "adv20_usd": 10e6, "anchor_idx": 60,
+         "resolution_date": res},
+    ])
+    out = simulate(scores, price_lookup, SimConfig())
+    # Only BAZ should be bought; FOO and BAR are NaN-skipped
+    assert len(out["blotter"]) == 1
+    assert out["blotter"].iloc[0]["ticker"] == "BAZ"
+
+
+def test_zero_or_negative_anchor_close_skipped():
+    dates = pd.date_range("2024-01-02", periods=200, freq="B")
+    closes = 100.0 + np.arange(200)
+    price_lookup = {t: pd.DataFrame({"date": dates, "close": closes})
+                     for t in ("A", "B", "C")}
+    anchor, res = dates[60], dates[100]
+    scores = pd.DataFrame([
+        {"ticker": "A", "anchor_date": anchor, "score": 1.0, "anchor_close": 0.0,
+         "adv20_usd": 10e6, "anchor_idx": 60, "resolution_date": res},
+        {"ticker": "B", "anchor_date": anchor, "score": 0.9, "anchor_close": -5.0,
+         "adv20_usd": 10e6, "anchor_idx": 60, "resolution_date": res},
+        {"ticker": "C", "anchor_date": anchor, "score": 0.8, "anchor_close": 50.0,
+         "adv20_usd": 10e6, "anchor_idx": 60, "resolution_date": res},
+    ])
+    out = simulate(scores, price_lookup, SimConfig())
+    assert len(out["blotter"]) == 1
+    assert out["blotter"].iloc[0]["ticker"] == "C"
+
+
 if __name__ == "__main__":
     test_trailing_stop_reduces_max_dd()
     test_almgren_chriss_scales_with_participation()
     test_halt_risk_drops_some_trades()
     test_simulator_keys_unchanged()
+    test_nan_candidates_silently_skipped()
+    test_zero_or_negative_anchor_close_skipped()
     print("PASS simulator realistic-cost extensions")

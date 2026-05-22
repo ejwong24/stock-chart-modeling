@@ -84,7 +84,11 @@ def label_one(df: pd.DataFrame, ticker: str, horizons: list[int],
         ret = end_close / out["anchor_close"].to_numpy() - 1.0
         log_ret = np.log(end_close / out["anchor_close"].to_numpy())
 
-        # path stats over [anchor+1 .. anchor+H]
+        # Path stats over [anchor+1 .. anchor+H]
+        # MFE (max favorable excursion) is the peak UNREALIZED GAIN — bounded
+        # at 0 by convention (if the stock only ever went down, MFE = 0).
+        # MAE (max adverse excursion) is the peak UNREALIZED LOSS — bounded
+        # at 0 by convention (if the stock only ever went up, MAE = 0).
         mfe = np.empty(len(out))
         mae = np.empty(len(out))
         for i, (a, e) in enumerate(zip(anchor_idx, end_idx)):
@@ -93,9 +97,13 @@ def label_one(df: pd.DataFrame, ticker: str, horizons: list[int],
                 mfe[i] = np.nan
                 mae[i] = np.nan
             else:
-                rel = window / closes[a] - 1.0
-                mfe[i] = float(rel.max())
-                mae[i] = float(rel.min())
+                if closes[a] <= 0:
+                    mfe[i] = 0.0
+                    mae[i] = 0.0
+                else:
+                    rel = window / closes[a] - 1.0
+                    mfe[i] = float(max(0.0, rel.max()))
+                    mae[i] = float(min(0.0, rel.min()))
 
         out[f"fwd_ret_{H}d"] = ret
         out[f"fwd_log_ret_{H}d"] = log_ret
