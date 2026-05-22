@@ -43,6 +43,11 @@ def render_one(close_window: np.ndarray, image_size: int = 224,
     log_ratios = np.log(np.clip(ratios, 1e-6, None))
     y_lo = float(np.log(log_y_min))
     y_hi = float(np.log(log_y_max))
+    # Defensive: degenerate or inverted axis collapses to a centered flat line
+    # rather than triggering a divide-by-zero RuntimeWarning.
+    if y_hi <= y_lo or not np.isfinite(y_hi - y_lo):
+        y_hi = y_lo + 1.0  # synthesize a unit range so the math is finite
+        log_ratios = np.full_like(log_ratios, (y_lo + y_hi) / 2.0)
 
     img = Image.new("RGB", (image_size, image_size), (255, 255, 255))
     draw = ImageDraw.Draw(img)
