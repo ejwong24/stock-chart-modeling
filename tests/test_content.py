@@ -115,17 +115,25 @@ def test_research_index_lists_all_five_problems():
     assert not missing, f"INDEX.md missing: {missing}"
 
 
+ALL_DEEPDIVES = [
+    "01_dinov2_architecture", "02_pca_math", "03_engineered_features",
+    "04_logistic_regression", "05_volume_processing", "06_simulator_loop",
+    "07_ma250_prefilter", "08_walkforward_embargo", "09_almgren_chriss",
+    "10_deflated_sharpe", "11_trailing_stop_interactions",
+    "12_reproducibility_seeds",
+    "13_data_acquisition", "14_universe_construction", "15_deployment_tailscale",
+    "16_trial_registry", "17_disaster_recovery", "18_weekly_anchors",
+    "19_label_grid", "20_simple_baselines", "21_validation_modes",
+    "22_block_bootstrap_params", "23_multiple_comparison_landscape",
+    "24_effective_sample_size", "25_frictions_beyond_impact",
+    "26_capacity_ceiling",
+]
+
+
 def test_pipeline_deepdives_all_present():
-    """All 12 chapter-9 deep-dive markdown files exist with non-trivial content."""
+    """Every chapter-9 deep-dive markdown file exists with non-trivial content."""
     d = PROJECT / "RESEARCH" / "pipeline_deepdives"
-    expected = [
-        "01_dinov2_architecture", "02_pca_math", "03_engineered_features",
-        "04_logistic_regression", "05_volume_processing", "06_simulator_loop",
-        "07_ma250_prefilter", "08_walkforward_embargo", "09_almgren_chriss",
-        "10_deflated_sharpe", "11_trailing_stop_interactions",
-        "12_reproducibility_seeds",
-    ]
-    for slug in expected:
+    for slug in ALL_DEEPDIVES:
         p = d / f"{slug}.md"
         assert p.exists(), f"missing deep-dive markdown: {slug}.md"
         text = p.read_text()
@@ -137,13 +145,7 @@ def test_chapter_9_links_to_all_deepdives():
     """Chapter 9 main page should link to every deep-dive subsection."""
     p = PROJECT / "web" / "templates" / "story" / "09_pipeline_walkthrough.html"
     text = p.read_text()
-    for slug in [
-        "01_dinov2_architecture", "02_pca_math", "03_engineered_features",
-        "04_logistic_regression", "05_volume_processing", "06_simulator_loop",
-        "07_ma250_prefilter", "08_walkforward_embargo", "09_almgren_chriss",
-        "10_deflated_sharpe", "11_trailing_stop_interactions",
-        "12_reproducibility_seeds",
-    ]:
+    for slug in ALL_DEEPDIVES:
         assert f"/story/09/{slug}" in text, f"chapter 9 missing link to /story/09/{slug}"
 
 

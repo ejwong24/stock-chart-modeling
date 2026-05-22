@@ -568,6 +568,170 @@ the design rationale, and the BNTX-specific numbers worked out. Each is a
 
 </div>
 
+<h2 id="drill-deeper-round-2">📚 Drill deeper — round 2 (14 more deep-dives)</h2>
+
+<p>Operational, conceptual, and statistical questions that didn't fit in the
+first 12 deep-dives. Same format — focused 700-1200 word write-ups with
+concrete numbers and BNTX-anchored examples where applicable.</p>
+
+<div class="cards" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+
+  <a class="chapter-card" href="/story/09/13_data_acquisition">
+    <span class="num">DEEP DIVE 13 · DATA</span>
+    <h3>The data acquisition layer</h3>
+    <p class="preview">
+      yfinance with auto_adjust=True, threaded joblib, 3-retry exponential backoff,
+      split-adjustment caveats, the delisting hole, why parquet, the 25-40 min runtime
+      bottleneck (yfinance's per-ticker latency, not CPU).
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/14_universe_construction">
+    <span class="num">DEEP DIVE 14 · UNIVERSE</span>
+    <h3>Building the universe (NASDAQ Trader + delisted seed)</h3>
+    <p class="preview">
+      Pulls nasdaqlisted.txt and otherlisted.txt fresh on every run. Hand-curated
+      delisted_seed.txt + EDGAR Form 25 scraping covers ~28% of the survivorship gap.
+      Why we don't yet have true point-in-time reconstruction.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/15_deployment_tailscale">
+    <span class="num">DEEP DIVE 15 · DEPLOY</span>
+    <h3>FastAPI + Tailscale + the no-DNS trick</h3>
+    <p class="preview">
+      Localhost-only uvicorn → Tailscale serve → real Let's Encrypt HTTPS on the
+      Tailnet hostname. No DNS, no firewall rules, no cert prompts. Access control
+      is just "be in the Tailnet."
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/16_trial_registry">
+    <span class="num">DEEP DIVE 16 · HONESTY</span>
+    <h3>The trial registry — every config tried, counted once</h3>
+    <p class="preview">
+      Append-only JSONL. Dedup tuple is (model, label, horizon_d, threshold_q, universe).
+      POSIX atomic append for &lt; 4 KB writes, 4-thread concurrency-tested. The single
+      source of truth for N_trials in the deflated Sharpe correction.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/17_disaster_recovery">
+    <span class="num">DEEP DIVE 17 · OPS</span>
+    <h3>Disaster recovery — restoring from scratch</h3>
+    <p class="preview">
+      Four data tiers, full bash procedure, ~7-11 hour unattended recovery to
+      276/276 tests green. The yfinance data-drift caveat. The minimum-viable
+      recovery if only the git repo survives.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/18_weekly_anchors">
+    <span class="num">DEEP DIVE 18 · CADENCE</span>
+    <h3>Why weekly anchors, not daily</h3>
+    <p class="preview">
+      Daily anchors with H=40 produce ~1/40 uniqueness — autocorrelation near 1.
+      Monthly is 4× too few. Weekly hits the sweet spot: ~5× less autocorrelation
+      than daily, 4-5× more data than monthly.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/19_label_grid">
+    <span class="num">DEEP DIVE 19 · LABELS</span>
+    <h3>The 36-label grid + mfe/mae/path-dependent</h3>
+    <p class="preview">
+      6 horizons × 6 thresholds = 36 binary labels. Plus MFE/MAE with proper
+      convention (≥0 and ≤0). Plus tb_approx, mfe_mae_ratio, sortino_label,
+      clean_run, upside_dominance. BNTX 2021-07-02: ret=+54%, mfe=+100%, mae=-5%.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/20_simple_baselines">
+    <span class="num">DEEP DIVE 20 · BASELINES</span>
+    <h3>The 5 simple baselines, defined</h3>
+    <p class="preview">
+      rank_252d_return, rank_60d_return, rank_ma250_extension, rank_52w_high_distance,
+      rank_inv_60d_vol. Each captures a different slice of momentum. The model is
+      in the SAME LEAGUE as the baselines after costs and DSR.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/21_validation_modes">
+    <span class="num">DEEP DIVE 21 · VALIDATION</span>
+    <h3>Three validation modes — when to use which</h3>
+    <p class="preview">
+      Walk-forward catches per-year regime overfit. Lockbox 2025 catches selection
+      bias. Forward paper-trading catches regime change. The right order: cheap-and-noisy
+      first, expensive-and-honest last.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/22_block_bootstrap_params">
+    <span class="num">DEEP DIVE 22 · BOOTSTRAP</span>
+    <h3>Block bootstrap — block size, n_resamples, variants</h3>
+    <p class="preview">
+      Politis-Romano stationary block bootstrap. Why block_size=40 (matches the
+      horizon). n_resamples=10000 for MC error &lt; 0.5pp. Concrete CI numbers and a
+      block_size sensitivity sweep showing &lt; 2pp drift.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/23_multiple_comparison_landscape">
+    <span class="num">DEEP DIVE 23 · STATS</span>
+    <h3>The full multiple-comparison landscape</h3>
+    <p class="preview">
+      Bonferroni → Holm-Bonferroni → White's Reality Check → Hansen's SPA → Deflated
+      Sharpe. Decision tree for which one to use when. Our pipeline reports DSR
+      always, SPA when it succeeds, takes the more conservative as headline.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/24_effective_sample_size">
+    <span class="num">DEEP DIVE 24 · DEFLATION</span>
+    <h3>Effective sample size — why 1,104 trades = ~44</h3>
+    <p class="preview">
+      López de Prado's average uniqueness. ~25 concurrent positions on any given day
+      → effective N = 44. SE(Sharpe) widens by 5x. Combines with DSR to produce the
+      conservative verdict: not statistically significant.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/25_frictions_beyond_impact">
+    <span class="num">DEEP DIVE 25 · COSTS</span>
+    <h3>Frictions beyond impact — spread, halts, tax</h3>
+    <p class="preview">
+      Bid-ask spread (1-200 bps by tier). Halt risk (0.1-3.0% per attempt by ADV).
+      Short-term capital gains: 38% effective in California → 1.7pp CAGR drag.
+      Stacked, the four frictions eat 30-50% of pre-cost CAGR.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/26_capacity_ceiling">
+    <span class="num">DEEP DIVE 26 · CAPACITY</span>
+    <h3>How much money this strategy could actually manage</h3>
+    <p class="preview">
+      The sweet spot is $50k-$5M. Below: fixed costs dominate. Above: impact dominates.
+      $50M+ erodes the edge fully even with multi-day TWAP. Capacity-honest reporting
+      is part of the honest-report-card requirement.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+</div>
+
 <h2>Try this yourself</h2>
 
 <p>You can pick any (ticker, anchor_date) pair from our scores parquet and walk

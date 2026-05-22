@@ -35,13 +35,19 @@ GET_200.extend(f"/research/{s}" for s in [
     "04_costs_capacity", "05_path_dependent_exits",
 ])
 
-# Chapter 9 pipeline deep-dive subsections
+# Chapter 9 pipeline deep-dive subsections (rounds 1 + 2)
 GET_200.extend(f"/story/09/{s}" for s in [
     "01_dinov2_architecture", "02_pca_math", "03_engineered_features",
     "04_logistic_regression", "05_volume_processing", "06_simulator_loop",
     "07_ma250_prefilter", "08_walkforward_embargo", "09_almgren_chriss",
     "10_deflated_sharpe", "11_trailing_stop_interactions",
     "12_reproducibility_seeds",
+    "13_data_acquisition", "14_universe_construction", "15_deployment_tailscale",
+    "16_trial_registry", "17_disaster_recovery", "18_weekly_anchors",
+    "19_label_grid", "20_simple_baselines", "21_validation_modes",
+    "22_block_bootstrap_params", "23_multiple_comparison_landscape",
+    "24_effective_sample_size", "25_frictions_beyond_impact",
+    "26_capacity_ceiling",
 ])
 
 # Run-detail routes — only test if run exists

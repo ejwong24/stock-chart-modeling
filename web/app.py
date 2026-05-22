@@ -382,6 +382,20 @@ PIPELINE_DEEPDIVES = {
     "10_deflated_sharpe": "Deflated Sharpe Ratio — the math behind the threshold",
     "11_trailing_stop_interactions": "The trailing stop, the horizon exit, and what happens when both fire",
     "12_reproducibility_seeds": "Every random seed and where it lives",
+    "13_data_acquisition": "The data acquisition layer — yfinance, split-adjustment, error handling",
+    "14_universe_construction": "Building the universe — NASDAQ Trader, delisted seed, survivorship",
+    "15_deployment_tailscale": "Web UI deployment — FastAPI + Tailscale + the no-DNS trick",
+    "16_trial_registry": "The trial registry — every config tried, counted once",
+    "17_disaster_recovery": "Disaster recovery — restoring the pipeline from scratch",
+    "18_weekly_anchors": "Why weekly anchors, not daily",
+    "19_label_grid": "The 36-label grid + mfe/mae/path-dependent variants",
+    "20_simple_baselines": "The 5 simple baselines — what they rank by and why each matters",
+    "21_validation_modes": "Three validation modes — walk-forward, lockbox, forward paper",
+    "22_block_bootstrap_params": "Block bootstrap parameters — block size, n_resamples, variants",
+    "23_multiple_comparison_landscape": "Bonferroni → Holm → Reality Check → SPA → DSR",
+    "24_effective_sample_size": "Effective sample size — why 1,104 trades counts as ~44",
+    "25_frictions_beyond_impact": "Frictions beyond impact — spread, halts, tax drag",
+    "26_capacity_ceiling": "Capacity ceiling — how much money this strategy could actually manage",
 }
 
 

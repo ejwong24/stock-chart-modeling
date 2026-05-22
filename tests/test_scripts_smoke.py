@@ -34,8 +34,11 @@ def test_script_help_exits_clean(script):
     """python script.py --help should exit 0 and print usage."""
     p = PROJECT / script
     assert p.exists(), f"missing {p}"
+    # 60s timeout: cold imports of torch + lightgbm + sklearn on ARM64 4-core CPU
+    # routinely take 8-12s wall-clock for the heaviest scripts (run_pipeline,
+    # forward_pick). 15s wasn't enough headroom under contention.
     r = subprocess.run([PYTHON, str(p), "--help"], capture_output=True,
-                         timeout=15)
+                         timeout=60)
     assert r.returncode == 0, f"{script} --help exited {r.returncode}: " \
                                  f"{r.stderr.decode()[:500]}"
     assert b"usage" in r.stdout.lower() or b"help" in r.stdout.lower()
