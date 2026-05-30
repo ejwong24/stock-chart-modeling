@@ -421,6 +421,19 @@ PIPELINE_DEEPDIVES = {
     "49_phantom_positions": "Phantom positions and accounting integrity in the simulator",
     "50_atomic_writes_integrity": "Atomic writes, duplicate dates, and data integrity",
     "51_audit_methodology": "How the audit worked — multi-agent bug hunting with adversarial verification",
+    "52_paired_gap_test": "The paired-bootstrap gap test — measuring the central claim",
+    "53_settle_loop": "Closing the loop — settle_picks.py and the realized forward record",
+    "54_data_hashes": "data_hashes.json — detecting yfinance drift",
+    "55_the_verdict": "The verdict — why this pipeline shows no demonstrated edge, stated plainly",
+    "56_cost_stack": "The cost stack end to end — from gross alpha to net-of-everything",
+    "57_survivorship_accounting": "Survivorship bias — the full accounting",
+    "58_regime_dependence": "Regime dependence — how a momentum strategy behaves across 2017–2025",
+    "59_image_track_postmortem": "The DINOv2 image-track post-mortem — why it lost",
+    "60_data_flow_contract": "The data-flow contract — anchor, feature, label, split alignment",
+    "61_portfolio_construction": "Portfolio construction — from scores to the weekly five-name book",
+    "62_anatomy_of_a_trade": "Anatomy of a trade — BNTX from raw bars to realized P&L",
+    "63_config_surface": "The config surface — every knob and its default",
+    "64_glossary": "Glossary — every term and metric across the deep-dive series",
 }
 
 

@@ -1026,6 +1026,160 @@ All cross-linked so you can trace any thread as deep as you want.</p>
 
 </div>
 
+<h2 id="drill-deeper-round-5">🧭 Drill deeper — round 5 (synthesis, new features &amp; reference, 13 more)</h2>
+
+<p>The deep-dives for the three features just shipped (the paired-gap significance
+test, the settle loop, data-hash drift detection), plus the synthesis pages the
+corpus still lacked: the overall verdict, the end-to-end cost stack, the data-flow
+contract, portfolio construction, regime behaviour, the image-track post-mortem,
+a full config reference, and a glossary. <strong>Best entry points:
+<a href="/story/09/55_the_verdict">the verdict</a> and
+<a href="/story/09/39_hardening_story">the hardening story</a>.</strong></p>
+
+<div class="cards" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+
+  <a class="chapter-card" href="/story/09/55_the_verdict" style="border-color: rgba(255,180,84,0.6);">
+    <span class="num">DEEP DIVE 55 · VERDICT</span>
+    <h3>Why this pipeline shows no demonstrated edge</h3>
+    <p class="preview">
+      The synthesis. Paired gap CI straddles 0 (p≈0.27); best Sharpe below the DSR
+      threshold; effective N ~44; image track loses; costs eat 30-50%. "No demonstrated
+      edge" ≠ "definitely no edge" — and the negative result is the product.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/52_paired_gap_test" style="border-color: rgba(78,224,168,0.4);">
+    <span class="num">DEEP DIVE 52 · SIGNIFICANCE</span>
+    <h3>The paired-bootstrap gap test</h3>
+    <p class="preview">
+      Finally measuring "does the model beat the best baseline?" Paired (cancels market
+      exposure), block (respects autocorrelation), annualized arithmetic gap + one-sided
+      p. The +5.26% gap → [−15%, +49%], p(gap≤0)≈0.27.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/53_settle_loop" style="border-color: rgba(78,224,168,0.4);">
+    <span class="num">DEEP DIVE 53 · LIVE</span>
+    <h3>settle_picks.py — the realized forward record</h3>
+    <p class="preview">
+      Closes the forward loop: grades each pick 40 trading days later, idempotently and
+      atomically, into realized.csv. The picker scores the unresolved present; the settler
+      grades it once resolved.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/54_data_hashes">
+    <span class="num">DEEP DIVE 54 · INTEGRITY</span>
+    <h3>data_hashes.json — detecting yfinance drift</h3>
+    <p class="preview">
+      Seeds fix the transform, not the input. SHA-256 every parquet; --verify diffs
+      changed/missing/added. Detects (doesn't fix) the silent restatements that break
+      bit-identical repro — worst on delisted names.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/56_cost_stack">
+    <span class="num">DEEP DIVE 56 · COSTS</span>
+    <h3>The cost stack — gross to net-of-everything</h3>
+    <p class="preview">
+      A waterfall: +4.3% gross → commission → spread → Almgren-Chriss impact (tiny on
+      mega-caps, brutal on thin names) → halts → 38.8% STCG tax → +2.6% post-tax. Plus the
+      AUM-capacity interaction.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/57_survivorship_accounting">
+    <span class="num">DEEP DIVE 57 · BIAS</span>
+    <h3>Survivorship bias — the full accounting</h3>
+    <p class="preview">
+      The three delisted-name sources (seed list, EDGAR Form 25, inferred distress signatures),
+      ~28% coverage, why the label-corruption bug was especially dangerous here, and the
+      point-in-time universe that would close the gap.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/58_regime_dependence">
+    <span class="num">DEEP DIVE 58 · REGIMES</span>
+    <h3>How the strategy behaves across 2017–2025</h3>
+    <p class="preview">
+      The prefilter makes the eligible pool itself regime-dependent. 2020-21 was the best
+      (and most misleading) regime; 2022 housed the −44% drawdown; 2023-25 starves a
+      small-cap-tilted book. A regime bet, not all-weather.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/59_image_track_postmortem">
+    <span class="num">DEEP DIVE 59 · POST-MORTEM</span>
+    <h3>The DINOv2 image-track post-mortem</h3>
+    <p class="preview">
+      Why a 22M-param vision transformer lost to 40 numbers: OOD encoder, unsupervised PCA
+      discarding the signal (the real asterisk), the lossy render round-trip, data-hungry
+      folds. What PLS/a chart-native encoder would prove.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/60_data_flow_contract" style="border-color: rgba(255,122,133,0.4);">
+    <span class="num">DEEP DIVE 60 · CONTRACT</span>
+    <h3>The data-flow contract — alignment end to end</h3>
+    <p class="preview">
+      One (ticker, anchor) row through every stage, with the invariant at each seam. The
+      three load-bearing rules: one parquet ordering everywhere; one canonical frame + one
+      mask; resolution_date as the single source of "when is this known."
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/61_portfolio_construction">
+    <span class="num">DEEP DIVE 61 · BOOK</span>
+    <h3>From scores to the weekly five-name book</h3>
+    <p class="preview">
+      The Friday funnel: rank → ADV filter → no-duplicate → halt risk → size → cap at 5 →
+      cohort overlap. Why rank-before-filter; why only ranks (not absolute scores) are
+      trustworthy.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/62_anatomy_of_a_trade">
+    <span class="num">DEEP DIVE 62 · TRADE</span>
+    <h3>Anatomy of a trade — BNTX, data-level</h3>
+    <p class="preview">
+      The data-level companion to chapter 9: BNTX 2021-07-02 → 2021-08-30 through every
+      module with concrete values at each step. Rank #10 drove the cohort; the #1 pick lost.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/63_config_surface">
+    <span class="num">DEEP DIVE 63 · REFERENCE</span>
+    <h3>The config surface — every knob and default</h3>
+    <p class="preview">
+      Every tunable parameter by stage, with real defaults from default.yaml / realistic.yaml /
+      SimConfig, plus which knobs matter (sensitivity) and which are cosmetic.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/64_glossary" style="border-color: rgba(110,168,255,0.5);">
+    <span class="num">DEEP DIVE 64 · GLOSSARY</span>
+    <h3>Every term and metric, defined</h3>
+    <p class="preview">
+      The reference index: 38 terms across the 60+ deep-dives, each one to three sentences
+      with a link to its home page. The decoder ring for the whole series.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+</div>
+
 <h2>Try this yourself</h2>
 
 <p>You can pick any (ticker, anchor_date) pair from our scores parquet and walk

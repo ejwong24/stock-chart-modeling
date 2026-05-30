@@ -57,6 +57,10 @@ GET_200.extend(f"/story/09/{s}" for s in [
     "45_testing_philosophy", "46_forward_pick_harness", "47_roadmap",
     "48_degenerate_folds", "49_phantom_positions", "50_atomic_writes_integrity",
     "51_audit_methodology",
+    "52_paired_gap_test", "53_settle_loop", "54_data_hashes", "55_the_verdict",
+    "56_cost_stack", "57_survivorship_accounting", "58_regime_dependence",
+    "59_image_track_postmortem", "60_data_flow_contract", "61_portfolio_construction",
+    "62_anatomy_of_a_trade", "63_config_surface", "64_glossary",
 ])
 
 # Run-detail routes — only test if run exists
