@@ -117,6 +117,68 @@ def daily_returns_from_equity(equity: pd.DataFrame) -> np.ndarray:
     return equity["equity"].pct_change().dropna().to_numpy()
 
 
+def paired_gap_bootstrap(model_equity: pd.DataFrame, baseline_equity: pd.DataFrame,
+                         n_resamples: int = 10000, block_size: int = 40,
+                         seed: int = 42) -> dict:
+    """Paired stationary-block bootstrap on the model-minus-baseline return gap.
+
+    This is the rigorous version of the central claim "does the model beat the
+    best simple baseline?". It aligns the two equity curves BY DATE, takes the
+    per-day simple-return difference (a paired series, which cancels the shared
+    market exposure and so is far tighter than two independent CIs), and
+    block-bootstraps the annualized mean daily gap. A block bootstrap (not iid)
+    is used because the daily gap is autocorrelated over the holding horizon;
+    block_size defaults to that horizon.
+
+    Returns the annualized arithmetic gap (mean daily diff x 252), its 95% CI,
+    and a one-sided p-value for H0: gap <= 0. NOTE: this is the *raw* paired
+    p-value; "best baseline" is itself a max over K baselines, so a multiple-
+    comparison adjustment (see deflated_sharpe_ratio / reality_check_spa) should
+    be applied before claiming significance.
+    """
+    empty = {"gap_annualized": 0.0, "gap_ci": (0.0, 0.0, 0.0),
+             "p_value_gap_le_0": 1.0, "n_obs": 0}
+    if model_equity is None or baseline_equity is None:
+        return empty
+    if "date" not in model_equity.columns or "date" not in baseline_equity.columns:
+        return empty
+    m = model_equity[["date", "equity"]].copy()
+    b = baseline_equity[["date", "equity"]].copy()
+    m["date"] = pd.to_datetime(m["date"])
+    b["date"] = pd.to_datetime(b["date"])
+    j = m.merge(b, on="date", suffixes=("_m", "_b")).sort_values("date")
+    if len(j) < 6:
+        return empty
+    rm = j["equity_m"].astype(float).pct_change().to_numpy()[1:]
+    rb = j["equity_b"].astype(float).pct_change().to_numpy()[1:]
+    d = rm - rb
+    d = d[np.isfinite(d)]
+    n = len(d)
+    if n < 5:
+        return empty
+    p = 1.0 / max(block_size, 1)
+    rng = np.random.default_rng(seed)
+    ann = np.empty(n_resamples)
+    for i in range(n_resamples):
+        idx = np.empty(n, dtype=np.int64)
+        t = 0
+        while t < n:
+            start = int(rng.integers(0, n))
+            L = int(rng.geometric(p))
+            take = min(L, n - t)
+            for k in range(take):
+                idx[t + k] = (start + k) % n
+            t += take
+        ann[i] = float(d[idx].mean() * 252.0)
+    lo, med, hi = (float(x) for x in np.percentile(ann, [2.5, 50, 97.5]))
+    return {
+        "gap_annualized": float(d.mean() * 252.0),
+        "gap_ci": (lo, med, hi),
+        "p_value_gap_le_0": float((ann <= 0).mean()),
+        "n_obs": n,
+    }
+
+
 # ─────────────────────────────────────────────────────────────────────────
 # Honest reporting additions (per 60-subagent research synthesis P3)
 # ─────────────────────────────────────────────────────────────────────────

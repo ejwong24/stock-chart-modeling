@@ -46,7 +46,14 @@ Seven days covers a long weekend or a holiday-shortened week; beyond that, the [
 
 ## What's still missing (honestly)
 
-The picks are generated; they are not yet *graded*. The docstring promises a companion `settle_picks.py` that looks up each pick's realized return 40 trading days later and writes `data/forward_realized/`. That script does not exist. The loop is open: we emit five tickers a week and never circle back to score them against what actually happened. The "after 26 weeks you have 130 fully out-of-sample trades" claim in the docstring is, today, aspirational — the harness produces the inputs to that result but not the result itself. This is the #1 item on the [feature gaps roadmap](/story/09/47_roadmap): a forward test you don't settle is just a forward *log*.
+**Update — the settle loop now exists.** `scripts/settle_picks.py` (built in the same
+pass) closes the loop: it walks `data/forward_picks/`, and for every pick whose
+40-trading-day window has resolved it looks up the realized return (same positional
+trading-calendar arithmetic as the simulator) and appends a row to
+`data/forward_realized/realized.csv`. It is idempotent — re-runs settle only
+newly-resolvable picks and write atomically — so a daily cron accumulates the
+~130 fully out-of-sample trades the docstring promised. The remaining work is
+operational (wire the cron) rather than code; see the [feature gaps roadmap](/story/09/47_roadmap).
 
 ## The regression test
 

@@ -6,12 +6,15 @@ The table is sorted by value-to-effort ratio. Effort is S/M/L (a few hours / a d
 
 ## The prioritized table
 
+> **Update:** items 1, 2, 3, and 11 below are now **✅ shipped** (this session).
+> The table keeps them for context; the prose under each notes what landed.
+
 | Gap | Why it matters | Approach | Effort | Value |
 |---|---|---|---|---|
-| 1. Settle/realize loop for forward picks is unimplemented | Forward paper-trading is the one result that survives every objection — but picks are never scored | Daily cron: 40 trading days after each pick file, look up realized return, append to `data/forward_realized/` | M | H |
-| 2. No paired bootstrap on the model-vs-best-baseline GAP | This is *the* claim; `gap_ci` is a TODO string, so the headline gap has no significance | Paired block bootstrap on per-period return differences; fill `gap_ci`/`gap_significant` in `report_card` | M | H |
-| 3. No `data_hashes.json` | "Bit-identical repro" only holds if parquet is byte-identical, but yfinance drifts | Commit SHA-256 manifest of `data/adjusted/*.parquet`; flag drift on restore; snapshot to NAS/S3 | S | M |
-| 11. SPY-beta doc states a now-false "BNTX beta = 0.00" | A flagship deep-dive teaches a bug artifact as fact | Add a correction banner linking the [beta-zero post-mortem](/story/09/42_beta_zero_bug) | S | M |
+| 1. ✅ Settle/realize loop for forward picks | Forward paper-trading is the one result that survives every objection — but picks were never scored | **Shipped:** `scripts/settle_picks.py` settles resolvable picks idempotently into `data/forward_realized/realized.csv` | M | H |
+| 2. ✅ Paired bootstrap on the model-vs-best-baseline GAP | This is *the* claim; `gap_ci` was a TODO string | **Shipped:** `stats.paired_gap_bootstrap` + wired into `report_card` (`gap_ci`/`gap_significant`) | M | H |
+| 3. ✅ `data_hashes.json` | "Bit-identical repro" only holds if parquet is byte-identical, but yfinance drifts | **Shipped:** `manifest.write/verify_data_hashes` + `scripts/check_data_hashes.py --write/--verify` | S | M |
+| 11. ✅ SPY-beta doc stated a now-false "BNTX beta = 0.00" | A flagship deep-dive taught a bug artifact as fact | **Shipped:** correction banner on [38_spy_beta](/story/09/38_spy_beta) linking the [beta-zero post-mortem](/story/09/42_beta_zero_bug) | S | M |
 | 4. Unsupervised PCA, not supervised (PLS/LDA) | PCA may discard the image signal; the falsification verdict could be PCA's fault | Add a PLS-64 rerun of the image track for a fair comparison | M | M-H |
 | 5. Flat-bps spread, not liquidity-tiered | Small caps have wider spreads; flat bps understates their cost | `spread_bps` scaled by ADV tier | S | M |
 | 7. `run_pipeline.main` has no end-to-end test | The row-alignment landmine lived in untested orchestration | Synthetic end-to-end test of the real `main`, or extract a tested alignment helper | S-M | M |
@@ -40,13 +43,13 @@ This is the load-bearing claim of the whole project: does the model beat the *be
 
 The image track runs DINOv2 embeddings through [PCA](/story/09/02_pca_math) before modeling. PCA is unsupervised: it keeps high-variance directions and discards low-variance ones — but the predictive image signal may live precisely in a low-variance direction PCA throws away. That means the [falsification](/story/05_falsification) verdict ("the image track loses") might be partly PCA's fault, not the embeddings'. A PLS-64 (or LDA) rerun — supervised reduction toward the label — would make the comparison fair. Until then, the falsification stands but with an asterisk. See [DINOv2 architecture](/story/09/01_dinov2_architecture).
 
-## Suggested next sprint
+## Suggested next sprint — ✅ delivered
 
-The four highest value/effort-ratio items, in order:
+The four highest value/effort-ratio items were built this session:
 
-1. **Build the settle loop** (`settle_picks.py` + cron) — turns a dead-end harness into the project's strongest evidence.
-2. **Paired-bootstrap the GAP** — proves or kills the central claim; the machinery already half-exists.
-3. **`data_hashes.json`** — cheap insurance against yfinance drift quietly breaking "reproducible."
-4. **Beta-doc correction banner** — a one-line fix that stops a flagship page from teaching a bug.
+1. ✅ **The settle loop** (`scripts/settle_picks.py`) — grades resolvable forward picks 40 trading days later, idempotently, into `data/forward_realized/realized.csv`. Wire it to a daily cron to start accumulating live out-of-sample trades.
+2. ✅ **Paired-bootstrap the GAP** (`stats.paired_gap_bootstrap`) — the central claim now has a CI and p-value. On the `full` run the +5.26% headline gap has a 95% CI of roughly **[−15%, +49%]** annualized with **p(gap≤0) ≈ 0.27** — i.e., *not* distinguishable from zero even before multiple-comparison adjustment. Exactly the honest verdict the project exists to produce.
+3. ✅ **`data_hashes.json`** (`scripts/check_data_hashes.py`) — `--write` to snapshot, `--verify` to detect yfinance drift on restore.
+4. ✅ **Beta-doc correction banner** — done on [38_spy_beta](/story/09/38_spy_beta).
 
-Together these are roughly one focused sprint, and they close the two gaps that most undercut credibility (no live scoring, no significance on the headline gap) plus two near-free integrity fixes. A natural continuation of [the hardening story](/story/09/39_hardening_story).
+What remains for a future sprint: PLS-vs-PCA fairness rerun, liquidity-tiered spread, a true point-in-time universe, an end-to-end test of `run_pipeline.main`, resumable runs, and SPA-failure logging. A natural continuation of [the hardening story](/story/09/39_hardening_story).

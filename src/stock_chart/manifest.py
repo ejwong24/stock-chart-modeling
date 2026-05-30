@@ -28,6 +28,53 @@ def _dir_sha256(path: Path, glob: str) -> dict:
             "first_100_files_sha256": digests}
 
 
+def write_data_hashes(adjusted_dir: Path, out_path: Path, glob: str = "*.parquet") -> dict:
+    """Write a SHA-256 manifest of every parquet under adjusted_dir.
+
+    Reproducibility insurance: the pipeline's bit-identical guarantee only holds
+    if data/adjusted/*.parquet is byte-identical, but yfinance silently restates
+    history (split/dividend corrections, late adjustments). Committing this
+    manifest lets a later restore detect drift instead of silently producing
+    different results. Written atomically (temp + os.replace)."""
+    files = sorted(adjusted_dir.glob(glob))
+    hashes = {p.name: _file_sha256(p) for p in files}
+    payload = {"file_count": len(files), "glob": glob, "hashes": hashes}
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    import os as _os
+    tmp = out_path.with_name(out_path.name + ".tmp")
+    tmp.write_text(json.dumps(payload, indent=2, sort_keys=True))
+    _os.replace(tmp, out_path)
+    return payload
+
+
+def verify_data_hashes(adjusted_dir: Path, hashes_path: Path,
+                       glob: str = "*.parquet") -> dict:
+    """Diff current parquet hashes against a committed manifest.
+
+    Returns {changed, missing, added, ok} lists of filenames. `changed` = file
+    present in both but hash differs (yfinance drift); `missing` = in manifest
+    but not on disk; `added` = on disk but not in manifest. An empty changed+
+    missing means the data tree reproduces the manifest exactly."""
+    if not hashes_path.exists():
+        return {"error": f"no manifest at {hashes_path}",
+                "changed": [], "missing": [], "added": [], "ok": []}
+    manifest = json.loads(hashes_path.read_text()).get("hashes", {})
+    current = {p.name: _file_sha256(p) for p in sorted(adjusted_dir.glob(glob))}
+    changed, missing, added, ok = [], [], [], []
+    for name, h in manifest.items():
+        if name not in current:
+            missing.append(name)
+        elif current[name] != h:
+            changed.append(name)
+        else:
+            ok.append(name)
+    for name in current:
+        if name not in manifest:
+            added.append(name)
+    return {"changed": sorted(changed), "missing": sorted(missing),
+            "added": sorted(added), "ok": sorted(ok)}
+
+
 def env_packages(names: list[str]) -> dict:
     out = {}
     for n in names:

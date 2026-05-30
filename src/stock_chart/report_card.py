@@ -142,12 +142,32 @@ def auto_fill_from_run(run_dir: Path, project_root: Path,
     best_track = best.get("track", "unknown")
     eq_path = run_dir / f"equity_{best_track}.parquet" if best_track != "unknown" else None
     cagr_ci = sharpe_ci = mdd_ci = "N/A"
+    model_eq_df = None
     if eq_path is not None and eq_path.exists():
-        eq_df = pd.read_parquet(eq_path)
-        ci = _stats.bootstrap_cagr_ci(eq_df, n_resamples=2000, block_size=40)
+        model_eq_df = pd.read_parquet(eq_path)
+        ci = _stats.bootstrap_cagr_ci(model_eq_df, n_resamples=2000, block_size=40)
         cagr_ci = (f"[{ci['cagr_ci'][0]*100:+.1f}%, {ci['cagr_ci'][2]*100:+.1f}%]")
         sharpe_ci = (f"[{ci['sharpe_ci'][0]:+.2f}, {ci['sharpe_ci'][2]:+.2f}]")
         mdd_ci = (f"[{ci['maxdd_ci'][0]*100:.1f}%, {ci['maxdd_ci'][2]*100:.1f}%]")
+
+    # Paired bootstrap on the model-vs-best-baseline gap (the central claim).
+    gap_ci_str = "N/A"
+    gap_significant = "N/A"
+    bl_track = best_baseline.get("track")
+    bl_eq_path = run_dir / f"equity_{bl_track}.parquet" if bl_track else None
+    if model_eq_df is not None and bl_eq_path is not None and bl_eq_path.exists():
+        bl_eq_df = pd.read_parquet(bl_eq_path)
+        pg = _stats.paired_gap_bootstrap(model_eq_df, bl_eq_df,
+                                          n_resamples=2000, block_size=40)
+        lo, _med, hi = pg["gap_ci"]
+        p = pg["p_value_gap_le_0"]
+        gap_ci_str = (f"[{lo*100:+.1f}%, {hi*100:+.1f}%] annualized "
+                      f"(paired, p(gap≤0)={p:.3f})")
+        # Raw paired significance; flag that best-baseline is itself a max over K.
+        if p < 0.05 and lo > 0:
+            gap_significant = f"Y (raw paired p={p:.3f}; NOT yet N_trials-adjusted)"
+        else:
+            gap_significant = f"N (paired p(gap≤0)={p:.3f}; CI straddles 0)"
 
     # Effective sample size from blotter
     n_eff = 0
@@ -184,8 +204,8 @@ def auto_fill_from_run(run_dir: Path, project_root: Path,
         "best_baseline": (f"{best_baseline.get('track', 'n/a')} "
                           f"({best_baseline.get('cagr', 0)*100:+.2f}%)"),
         "gap_point": f"{gap*100:+.2f}%",
-        "gap_ci": "(needs paired bootstrap; see stats.py)",
-        "gap_significant": ("Y" if gap > 0.05 else "N (gap ≤ 5pp)"),
+        "gap_ci": gap_ci_str,
+        "gap_significant": gap_significant,
         "n_trades": str(best.get("n_trades", "?")),
         "n_eff": f"{n_eff:.0f}",
         "se_widen": f"{se_widen:.2f}",

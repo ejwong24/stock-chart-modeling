@@ -14,6 +14,8 @@ HELP_SCRIPTS = [
     "scripts/forward_pick.py",
     "scripts/run_sma250_test.py",
     "scripts/scrape_edgar_form25.py",
+    "scripts/settle_picks.py",
+    "scripts/check_data_hashes.py",
 ]
 
 # Scripts that just run their main() — we just want them to import cleanly
