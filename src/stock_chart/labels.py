@@ -78,11 +78,22 @@ def label_one(df: pd.DataFrame, ticker: str, horizons: list[int],
         "adv20_usd": anchors["adv20_usd"].to_numpy(),
     })
 
+    anchor_close_arr = out["anchor_close"].to_numpy()
     for H in horizons:
         end_idx = anchor_idx + H
         end_close = closes[end_idx]
-        ret = end_close / out["anchor_close"].to_numpy() - 1.0
-        log_ret = np.log(end_close / out["anchor_close"].to_numpy())
+        # Guard against non-positive prices. A non-positive ANCHOR close makes
+        # the return meaningless (inf), and since (inf >= T) is True it would
+        # silently flip the binary label to a FALSE POSITIVE — corrupting the
+        # training target on exactly the delisted / heavily-adjusted names the
+        # survivorship-aware universe deliberately includes. A zero END close
+        # is instead a legitimate -100% (ret = -1); only its log_ret (-inf)
+        # needs cleaning.
+        with np.errstate(divide="ignore", invalid="ignore"):
+            ret = end_close / anchor_close_arr - 1.0
+            log_ret = np.log(end_close / anchor_close_arr)
+        ret = np.where(anchor_close_arr > 0, ret, np.nan)
+        log_ret = np.where(np.isfinite(log_ret), log_ret, np.nan)
 
         # Path stats over [anchor+1 .. anchor+H]
         # MFE (max favorable excursion) is the peak UNREALIZED GAIN — bounded
@@ -141,6 +152,10 @@ def label_one(df: pd.DataFrame, ticker: str, horizons: list[int],
         out[f"sortino_label_{H}d"] = (ret.clip(lower=0) / abs_mae).astype(np.float32)
         out[f"upside_dominance_{H}d"] = (mfe > abs_mae).astype(np.int8)
         out[f"clean_run_{H}d"] = ((mfe >= 0.05) & (mae > -0.02)).astype(np.int8)
+    # Drop anchors with a non-positive anchor close: their returns/labels are
+    # meaningless (see the np.errstate guard above). A zero END close is kept
+    # (it is a real -100% total loss, a valuable survivorship signal).
+    out = out[out["anchor_close"] > 0].reset_index(drop=True)
     return out
 
 

@@ -34,6 +34,52 @@ def load_universe_with_data(c: dict) -> list[str]:
     return sorted(on_disk)
 
 
+def latest_candidates(adjusted_dir: Path, tickers: list[str], c: dict,
+                      today: pd.Timestamp) -> pd.DataFrame:
+    """Most-recent TRADABLE weekly anchor per ticker (the bar we'd buy now).
+
+    This is deliberately NOT derived from labels.build_all: label_one trims the
+    trailing ~H bars because a label needs a resolved forward window. The whole
+    point of a forward pick is the opposite — the freshest anchor whose forward
+    window has NOT resolved. So we generate candidates directly: the latest bar
+    at/before `today` with enough history for features (>= warmup) that passes
+    the MA250 prefilter. anchor_idx is the position in the FULL sorted parquet,
+    matching how features.compute_for_anchors indexes the price series.
+    """
+    warmup = c["labels"]["warmup_days"]
+    ma_window = c["prefilter"]["ma_window"]
+    ma_ext = c["prefilter"]["ma_extension"]
+    prefilter = c["prefilter"]["enabled"]
+    rows = []
+    for t in tickers:
+        p = adjusted_dir / f"{t}.parquet"
+        if not p.exists():
+            continue
+        df = pd.read_parquet(p)
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.sort_values("date").reset_index(drop=True)
+        elig = np.flatnonzero(df["date"].to_numpy() <= np.datetime64(today))
+        if len(elig) == 0:
+            continue
+        ti = int(elig[-1])                      # latest bar at/before today
+        if ti < warmup - 1 or ti < ma_window - 1:
+            continue                             # not enough history for features/MA
+        closes = df["close"].to_numpy(dtype=np.float64)
+        if not np.isfinite(closes[ti]) or closes[ti] <= 0:
+            continue
+        ma = closes[ti - ma_window + 1: ti + 1].mean()
+        if not np.isfinite(ma) or ma <= 0:
+            continue
+        if prefilter and (closes[ti] / ma) <= ma_ext:
+            continue
+        dollar = closes * df["volume"].to_numpy(dtype=np.float64)
+        adv = float(np.nanmean(dollar[max(0, ti - 19): ti + 1]))
+        rows.append({"ticker": t, "anchor_date": df["date"].iloc[ti],
+                     "anchor_idx": ti, "anchor_close": float(closes[ti]),
+                     "adv20_usd": adv, "last_bar_date": df["date"].iloc[ti]})
+    return pd.DataFrame(rows)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--label", default="ret_40d_ge_25pct",
@@ -98,21 +144,37 @@ def main():
     seed = c["seeds"]["sklearn_random_state"]
     art = mdl.fit_lgbm(X_tr, y_tr, seed=seed, lgbm_kwargs=c["models"]["lgbm"])
 
-    # Score the most recent anchor for each ticker (not yet resolved)
-    most_recent = (merged.sort_values("anchor_date")
-                          .groupby("ticker", as_index=False).tail(1))
-    most_recent = most_recent[most_recent[res_col] >= today].reset_index(drop=True)
-    print(f"  candidates for next pick: {len(most_recent)}")
-    if len(most_recent) == 0:
+    # Score the latest tradable anchor per ticker (forward window NOT yet
+    # resolved). Generated independently of label trimming (see latest_candidates).
+    cand = latest_candidates(cfg.project_path("data", "adjusted"), tickers, c, today)
+    if len(cand) == 0:
         print("  no eligible candidates today")
         return 0
+    # Freshness guard: if the newest available bar is far behind `today`, the
+    # data is stale — warn rather than silently picking on old prices.
+    newest_bar = pd.to_datetime(cand["last_bar_date"]).max()
+    stale_days = (today - newest_bar).days
+    if stale_days > 7:
+        print(f"  WARNING: newest data bar is {newest_bar.date()} "
+              f"({stale_days} days stale vs {today.date()})")
 
-    X_pred = most_recent[feat_cols].to_numpy(dtype=np.float32)
+    cand_feats = feat.compute_for_anchors(
+        cfg.project_path("data", "adjusted"),
+        cand[["ticker", "anchor_date", "anchor_idx"]], spy_path=spy_path)
+    cand = cand_feats.merge(cand, on=["ticker", "anchor_date"], how="inner")
+    # ADV liquidity gate (mirror the simulator's min_adv filter).
+    min_adv = c["simulator"]["min_adv_usd"]
+    cand = cand[cand["adv20_usd"] >= min_adv].reset_index(drop=True)
+    print(f"  candidates for next pick: {len(cand)}")
+    if len(cand) == 0:
+        print("  no eligible candidates after ADV filter")
+        return 0
+
+    X_pred = cand[feat_cols].to_numpy(dtype=np.float32)
     scores = mdl.predict_lgbm(art, X_pred)
-    most_recent = most_recent.assign(score=scores).sort_values(
-        "score", ascending=False)
+    cand = cand.assign(score=scores).sort_values("score", ascending=False)
 
-    picks = most_recent.head(args.top_k)[
+    picks = cand.head(args.top_k)[
         ["ticker", "anchor_date", "anchor_close", "adv20_usd", "score"]
     ].copy()
     picks["pick_generated"] = today

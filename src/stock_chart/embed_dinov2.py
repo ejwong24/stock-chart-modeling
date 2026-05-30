@@ -55,6 +55,9 @@ def embed_arrays(model: nn.Module, arrays: np.ndarray, batch_size: int = 16) -> 
     """Embed a batch of pre-rendered uint8 (N, 224, 224, 3) arrays."""
     out = []
     n = len(arrays)
+    if n == 0:
+        # np.concatenate([]) raises; return a correctly-shaped empty result.
+        return np.empty((0, 384), dtype=np.float32)  # ViT-S/14 CLS dim
     for i in range(0, n, batch_size):
         batch = arrays[i:i + batch_size]
         ims = [Image.fromarray(b) for b in batch]

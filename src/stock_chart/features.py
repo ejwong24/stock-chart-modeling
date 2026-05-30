@@ -93,13 +93,22 @@ def _compute_window_features(closes: np.ndarray, vols: np.ndarray,
         f["skew_252d"] = 0.0
         f["kurt_252d"] = 0.0
 
-    if spy_closes is not None and len(spy_closes) >= ti + 1:
-        spy_w = spy_closes[ti - 62:ti + 1]
-        spy_rets = np.diff(np.log(spy_w))
+    # 63-day market beta. NOTE: spy_closes must be aligned to THIS ticker's
+    # date index (done in compute_for_anchors), so spy_closes[ti] is SPY's
+    # close on the same calendar date as closes[ti]. The slice needs 64 closes
+    # to yield 63 log-returns matching my_rets[-63:] — a previous off-by-one
+    # (ti-62 -> 63 closes -> 62 returns) made the length guard never pass, so
+    # beta was silently 0.0 for every stock.
+    if spy_closes is not None and ti >= 63 and len(spy_closes) >= ti + 1:
+        spy_w = spy_closes[ti - 63:ti + 1]
         my_rets = rets[-63:]
-        if len(spy_rets) == len(my_rets) and spy_rets.std() > 0:
-            cov = np.cov(my_rets, spy_rets, ddof=1)[0, 1]
-            f["beta_spy_63d"] = float(cov / (spy_rets.var() + 1e-12))
+        if np.all(np.isfinite(spy_w)) and (spy_w > 0).all():
+            spy_rets = np.diff(np.log(spy_w))
+            if len(spy_rets) == len(my_rets) and spy_rets.std() > 0:
+                cm = np.cov(my_rets, spy_rets, ddof=1)
+                f["beta_spy_63d"] = float(cm[0, 1] / (cm[1, 1] + 1e-12))
+            else:
+                f["beta_spy_63d"] = 0.0
         else:
             f["beta_spy_63d"] = 0.0
     else:
@@ -200,12 +209,15 @@ def compute_for_anchors(adjusted_dir: Path, anchor_df: pd.DataFrame,
     `anchor_df` must have columns: ticker, anchor_date, anchor_idx.
     Returns the input DF with `FEATURE_COLS` appended.
     """
-    spy_closes = None
+    spy_by_date = None
     if spy_path is not None and spy_path.exists():
         spy_df = pd.read_parquet(spy_path)
         spy_df["date"] = pd.to_datetime(spy_df["date"])
-        spy_df = spy_df.sort_values("date").reset_index(drop=True)
-        spy_closes = spy_df["close"].to_numpy(dtype=np.float64)
+        spy_df = (spy_df.sort_values("date")
+                        .drop_duplicates("date", keep="last")
+                        .reset_index(drop=True))
+        spy_by_date = pd.Series(spy_df["close"].to_numpy(dtype=np.float64),
+                                index=spy_df["date"].to_numpy())
 
     rows = []
     for ticker, sub in anchor_df.groupby("ticker", sort=False):
@@ -215,6 +227,17 @@ def compute_for_anchors(adjusted_dir: Path, anchor_df: pd.DataFrame,
         df = pd.read_parquet(p).sort_values("date").reset_index(drop=True)
         closes = df["close"].to_numpy(dtype=np.float64)
         vols = df["volume"].to_numpy(dtype=np.float64)
+        # Align SPY to THIS ticker's calendar by DATE (not by row position):
+        # spy_closes[ti] must be SPY's close on closes[ti]'s date. Indexing a
+        # globally-sorted SPY array by the ticker's positional anchor_idx would
+        # silently compare mismatched dates for any ticker whose history starts
+        # later than / diverges from SPY's.
+        if spy_by_date is not None:
+            spy_closes = (spy_by_date.reindex(df["date"].to_numpy())
+                                     .ffill().bfill()
+                                     .to_numpy(dtype=np.float64))
+        else:
+            spy_closes = None
         for _, r in sub.iterrows():
             ti = int(r["anchor_idx"])
             if ti < 251 or ti >= len(closes):

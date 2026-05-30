@@ -168,6 +168,10 @@ def bootstrap_cagr_ci(equity_df: pd.DataFrame, n_resamples: int = 10000,
     eq = equity_df["equity"].to_numpy(dtype=np.float64)
     if len(eq) < 5:
         return {"cagr_ci": (0, 0, 0), "sharpe_ci": (0, 0, 0), "maxdd_ci": (0, 0, 0)}
+    # Floor at a tiny positive value: a zero/negative equity point (catastrophic
+    # blow-up, or a degenerate curve passed by a caller) would make np.log emit
+    # -inf/nan and poison every resampled CAGR/Sharpe/drawdown.
+    eq = np.clip(eq, 1e-9, None)
     r = np.diff(np.log(eq))
     n = len(r)
     p = 1.0 / max(block_size, 1)
@@ -269,8 +273,14 @@ def post_tax_cagr(blotter: pd.DataFrame, federal_rate: float = 0.32,
         equity += gross - y_tax
         tax += y_tax
     years = float(df["year"].nunique() or 1)
-    pre = float((1 + df["pnl_dollars"].sum() / start_equity) ** (1 / years) - 1)
-    post = float((equity / start_equity) ** (1 / years) - 1)
+    # Floor the compounding base at 0: if cumulative losses wipe the account
+    # below zero, a negative base raised to a fractional power (1/years) returns
+    # a Python complex number, and float(complex) raises TypeError. A wiped-out
+    # account is a -100% CAGR, so a 0 base -> 0 ** x - 1 = -1.0 is the right floor.
+    pre_base = max(1 + df["pnl_dollars"].sum() / start_equity, 0.0)
+    post_base = max(equity / start_equity, 0.0)
+    pre = float(pre_base ** (1 / years) - 1)
+    post = float(post_base ** (1 / years) - 1)
     return {
         "pre_tax_cagr": pre,
         "post_tax_cagr": post,

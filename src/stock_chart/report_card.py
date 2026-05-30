@@ -133,7 +133,7 @@ def auto_fill_from_run(run_dir: Path, project_root: Path,
     dsr = headline.get("deflated_sharpe", {}) or {}
 
     # Find best simple baseline
-    rank_summaries = [s for s in summaries if s["track"].startswith("rank_")]
+    rank_summaries = [s for s in summaries if s.get("track", "").startswith("rank_")]
     best_baseline = max(rank_summaries, key=lambda x: x.get("end_equity", 0)) \
                      if rank_summaries else {}
     gap = best.get("cagr", 0) - best_baseline.get("cagr", 0)

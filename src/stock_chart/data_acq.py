@@ -34,6 +34,11 @@ def _normalize_one(df: pd.DataFrame) -> pd.DataFrame:
     out.index = pd.to_datetime(out.index).tz_localize(None)
     out.index.name = "date"
     out = out.reset_index()
+    # Drop duplicate dates (yfinance occasionally re-emits a corrected bar).
+    # The whole pipeline indexes price series POSITIONALLY via anchor_idx
+    # (labels.idx_map, features ti), so a duplicate date would shift every
+    # subsequent index and silently break date->index alignment for the ticker.
+    out = out.drop_duplicates(subset="date", keep="last")
     out.columns = [c.lower() for c in out.columns]
     return out
 

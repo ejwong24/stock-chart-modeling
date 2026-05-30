@@ -156,13 +156,24 @@ def simulate(scores: pd.DataFrame, price_lookup: dict[str, pd.DataFrame],
             if p.exit_date <= today:
                 px_series = ticker_idx.get(p.ticker)
                 if px_series is None or p.exit_date not in px_series.index:
-                    # find next available trading day after exit_date
+                    # find next available trading day at/after exit_date
                     after = px_series.index[px_series.index >= p.exit_date] if px_series is not None else []
                     if len(after) == 0:
                         # cannot close, abandon at last known price
                         still_open.append(p)
                         continue
                     actual_exit = after[0]
+                    if actual_exit > today:
+                        # The real exit bar is in the FUTURE relative to `today`:
+                        # this ticker's calendar has a gap across exit_date, but
+                        # the master (all-ticker union) calendar reached exit_date
+                        # via a different ticker. Filling at actual_exit's close
+                        # now would book a future price = look-ahead. Defer: roll
+                        # exit_date forward and keep the position open until
+                        # `today` actually reaches actual_exit.
+                        p.exit_date = actual_exit
+                        still_open.append(p)
+                        continue
                     exit_close = float(px_series.loc[actual_exit])
                 else:
                     actual_exit = p.exit_date
@@ -224,6 +235,12 @@ def simulate(scores: pd.DataFrame, price_lookup: dict[str, pd.DataFrame],
             if raw_close is None or not np.isfinite(float(raw_close)) or float(raw_close) <= 0:
                 continue
             entry_close = float(raw_close)
+            # Never open a position we cannot price or close: a ticker present
+            # in `scores` but absent from `price_lookup` would debit cash, never
+            # close (no price series), be skipped at forced-close, and vanish
+            # from the blotter — trapping capital and undercounting trades.
+            if t not in ticker_idx:
+                continue
             equity_now = mtm
             target_usd = min(equity_now * cfg.max_position_pct,
                              cfg.max_adv_pct * adv)
@@ -279,7 +296,10 @@ def simulate(scores: pd.DataFrame, price_lookup: dict[str, pd.DataFrame],
             close_px = float(px_series.loc[last])
         else:
             close_px = p.entry_price
-        fill = close_px * _slippage_mult(cfg.slippage_bps_each_side, "sell")
+        # Use the same participation-scaled exit slippage as normal closes so
+        # end-of-sim liquidations are costed consistently when Almgren-Chriss
+        # impact is enabled (was: flat cfg.slippage_bps_each_side).
+        fill = close_px * _slippage_mult(_exit_slippage_bps(p), "sell")
         proceeds = p.shares * fill
         comm = _commission(p.shares, cfg.commission_per_share, proceeds)
         cash += proceeds - comm

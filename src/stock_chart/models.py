@@ -53,7 +53,12 @@ def _calibrate(scores: np.ndarray, y: np.ndarray) -> IsotonicRegression:
 
 
 def _split_calib(X: np.ndarray, y: np.ndarray, seed: int = 42):
-    return train_test_split(X, y, test_size=0.10, random_state=seed, stratify=y)
+    # Stratify only when every class has >=2 members; otherwise sklearn raises
+    # "The least populated class in y has only 1 member". Falls back to an
+    # unstratified split for degenerate label vectors (direct-API / tiny folds).
+    counts = np.bincount(y) if len(y) else np.array([0])
+    strat = y if counts.min() >= 2 else None
+    return train_test_split(X, y, test_size=0.10, random_state=seed, stratify=strat)
 
 
 def fit_lr_baseline(X_img: np.ndarray, X_vol: np.ndarray, y: np.ndarray,
@@ -61,12 +66,12 @@ def fit_lr_baseline(X_img: np.ndarray, X_vol: np.ndarray, y: np.ndarray,
     lr_kwargs = lr_kwargs or {}
     s1 = StandardScaler().fit(X_img)
     Xi = s1.transform(X_img)
-    pi = PCA(n_components=min(pca_dim, Xi.shape[1]), random_state=seed).fit(Xi)
+    pi = PCA(n_components=min(pca_dim, Xi.shape[1], Xi.shape[0]), random_state=seed).fit(Xi)
     Xi = pi.transform(Xi)
 
     s2 = StandardScaler().fit(X_vol)
     Xv = s2.transform(X_vol)
-    pv = PCA(n_components=min(pca_dim, Xv.shape[1]), random_state=seed).fit(Xv)
+    pv = PCA(n_components=min(pca_dim, Xv.shape[1], Xv.shape[0]), random_state=seed).fit(Xv)
     Xv = pv.transform(Xv)
 
     X = np.concatenate([Xi, Xv], axis=1)
@@ -128,12 +133,12 @@ def fit_lgbm_image(X_img: np.ndarray, X_vol: np.ndarray, y: np.ndarray,
                    pca_dim: int = 64, seed: int = 42, lgbm_kwargs: dict | None = None) -> dict:
     s1 = StandardScaler().fit(X_img)
     Xi = s1.transform(X_img)
-    pi = PCA(n_components=min(pca_dim, Xi.shape[1]), random_state=seed).fit(Xi)
+    pi = PCA(n_components=min(pca_dim, Xi.shape[1], Xi.shape[0]), random_state=seed).fit(Xi)
     Xi = pi.transform(Xi)
 
     s2 = StandardScaler().fit(X_vol)
     Xv = s2.transform(X_vol)
-    pv = PCA(n_components=min(pca_dim, Xv.shape[1]), random_state=seed).fit(Xv)
+    pv = PCA(n_components=min(pca_dim, Xv.shape[1], Xv.shape[0]), random_state=seed).fit(Xv)
     Xv = pv.transform(Xv)
 
     X = np.concatenate([Xi, Xv], axis=1)

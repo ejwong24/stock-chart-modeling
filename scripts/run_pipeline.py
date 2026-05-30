@@ -207,12 +207,18 @@ def main():
     np.save(out_dir / "dinov2_embeddings.npy", embs)
     anchor_kept.to_parquet(out_dir / "anchor_kept.parquet", index=False)
 
-    # Volume features (as in original doc): zscore(log1p(volume)) over 252-day window
-    vol_feats, keep_mask = _volume_features_for_anchors(merged, price_lookup,
-                                                         lookback=c["render"]["lookback_days"])
-    embs = embs[keep_mask[:len(embs)]] if keep_mask.sum() != len(embs) else embs
-    # Re-align merged and embs with keep_mask
-    merged_kept = merged.iloc[:len(embs)].reset_index(drop=True)
+    # Volume features (as in original doc): zscore(log1p(volume)) over 252-day window.
+    # CRITICAL alignment: `embs` is built from the render keep_idx and is 1:1 with
+    # `anchor_kept`. Compute volume features on `anchor_kept` (NOT `merged`) and
+    # apply the resulting mask to embs and the frame together, so embs, vol_feats,
+    # and merged_kept are the SAME rows in the SAME order by construction. The
+    # previous code used `merged.iloc[:len(embs)]` (a positional PREFIX) and a
+    # mask computed over `merged` — which silently misaligned image features with
+    # their labels/metadata the moment any anchor was dropped.
+    vol_feats, vmask = _volume_features_for_anchors(anchor_kept, price_lookup,
+                                                     lookback=c["render"]["lookback_days"])
+    embs = embs[vmask]
+    merged_kept = anchor_kept.iloc[vmask].reset_index(drop=True)
     _log(f"final aligned rows: emb={embs.shape[0]} vol={vol_feats.shape[0]} merged={len(merged_kept)}", t0)
 
     # 5. Splits: purged walk-forward

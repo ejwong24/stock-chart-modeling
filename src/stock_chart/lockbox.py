@@ -71,7 +71,14 @@ def claim_lockbox(registry_path: Path, *, horizon: int, threshold: float,
             f"refuse second claim. Pass allow_overwrite=True to override "
             f"(and document why in lockbox-broken.json).")
     reg[key] = {"ts": _now_iso(), "claimed": True, "git_sha": _git_sha()}
-    registry_path.write_text(json.dumps(reg, indent=2))
+    # Atomic write: a crash mid-write must not truncate/erase the registry,
+    # which holds ALL one-shot claims — its integrity is the whole point of the
+    # lockbox. Write to a temp file in the same dir, then os.replace (atomic on
+    # POSIX). (Note: a TOCTOU race between two concurrent claimers is still
+    # possible but out of scope for this single-user research workflow.)
+    tmp = registry_path.with_name(registry_path.name + ".tmp")
+    tmp.write_text(json.dumps(reg, indent=2))
+    os.replace(tmp, registry_path)
     return reg[key]
 
 
