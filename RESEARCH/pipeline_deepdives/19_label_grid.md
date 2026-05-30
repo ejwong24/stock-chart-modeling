@@ -48,7 +48,7 @@ Cross-product gives 36 binary labels. Why 36?
 
 1. **Faithful reproduction.** The original document tested 6×6 = 36.
 2. **Coverage.** Each `(H, T)` cell is a *different* classification problem.
-3. **Deflated Sharpe trial count.** Clean `N_trials = 36`.
+3. **[Deflated Sharpe](/story/09/10_deflated_sharpe) trial count.** Clean `N_trials = 36`.
 
 ## MFE / MAE: peak excursion labels
 
@@ -107,4 +107,4 @@ A single boolean: `1` iff `close > 1.5 * SMA250` on anchor_date. Cheap precomput
 
 ---
 
-> See [/story/09/06](/story/09/06) for how the simulator consumes these labels, and [/story/09/11](/story/09/11) for how the trailing stop tracks MFE/MAE-like signals.
+> See [/story/09/06](/story/09/06) for how the simulator consumes these labels, and [/story/09/11](/story/09/11) for how the [trailing stop](/story/09/11_trailing_stop_interactions) tracks MFE/MAE-like signals.

@@ -6,7 +6,7 @@ Our full backtest over 8 years produces **1,104 round-trip trades** in the `lgbm
 
 That instinct is wrong, and the reason is structural: **the trades overlap in time**. At any given trading day during the backtest, roughly **25 positions are open simultaneously**. Trade #412 and trade #418 might have been opened three days apart and held for 40 business days each — they share 37 days of market exposure. When the market drops 3% on day 20 of their shared window, *both* trades take a hit. Their P&L is not independent.
 
-A blotter with 1,104 overlapping trades therefore contains far less independent information than 1,104 non-overlapping trades. We need to quantify "far less."
+A [blotter](/story/09/34_blotter_equity_summary) with 1,104 overlapping trades therefore contains far less independent information than 1,104 non-overlapping trades. We need to quantify "far less."
 
 ## The fix: López de Prado's average uniqueness
 
@@ -86,7 +86,7 @@ A backtest can pass DSR (you actually had an edge versus selection bias) and sti
 2. For each trade, computes `uniqueness = (1 / concurrency).mean()` over hold window.
 3. Returns `sum(uniqueness)`.
 
-Bug #1 regression: the empty-blotter path used to crash on a `NaT`-only `date_range`. The function now short-circuits to `0.0`.
+Bug #1 regression: the empty-[blotter](/story/09/34_blotter_equity_summary) path used to crash on a `NaT`-only `date_range`. The function now short-circuits to `0.0`.
 
 ## Interpretation
 

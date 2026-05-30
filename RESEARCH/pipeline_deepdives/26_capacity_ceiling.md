@@ -4,7 +4,7 @@
 
 Every alpha source has a finite size. A strategy that prints 4% CAGR on a $50k account does not necessarily print 4% on $50M, because at $50M the strategy is no longer a passive observer of prices — it *is* the price-moving order flow. The mechanism is market impact: pushing size into a finite order book moves the print against you, and the move scales with how much of the day's volume you consume.
 
-The standard reference is the Almgren-Chriss impact model (see [/story/09/09](/story/09/09)):
+The standard reference is the [Almgren-Chriss](/story/09/09_almgren_chriss) impact model (see [/story/09/09](/story/09/09)):
 
 ```
 impact ≈ σ_daily × η × sqrt(Q / V)
@@ -30,13 +30,13 @@ Q / V       = 0.344
 
 We can trade **34.4% of ADV per position**. With ADV = $50M, that is **Q ≈ $17.2M per position**. At 25 simultaneous positions × $17.2M ≈ **$430M deployed AUM**.
 
-That headline is misleading. Almgren-Chriss prices a *single-day* trade; 34% of ADV in one session is outside the model's calibrated regime. Real execution has to spread across multiple days.
+That headline is misleading. [Almgren-Chriss](/story/09/09_almgren_chriss) prices a *single-day* trade; 34% of ADV in one session is outside the model's calibrated regime. Real execution has to spread across multiple days.
 
 ## The realistic capacity ceiling, in three scenarios
 
 - **One-day execution (aggressive)**: cap participation at ~8% ADV per day → ~$4M per position → **$50M AUM ceiling**.
 - **Multi-day TWAP, 3 days**: impact drops by `sqrt(3) ≈ 1.7×` → **~$200M AUM ceiling**.
-- **Multi-day TWAP + universe broadening** (drop the MA250 prefilter, allow large caps): **$500M+ AUM ceiling**, at the cost of changing what the strategy is.
+- **Multi-day TWAP + universe broadening** (drop the [MA250 prefilter](/story/09/07_ma250_prefilter), allow large caps): **$500M+ AUM ceiling**, at the cost of changing what the strategy is.
 
 ## The cost of multi-day execution
 

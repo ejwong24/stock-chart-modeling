@@ -732,6 +732,300 @@ concrete numbers and BNTX-anchored examples where applicable.</p>
 
 </div>
 
+<h2 id="drill-deeper-round-3">📚 Drill deeper — round 3 (12 more deep-dives)</h2>
+
+<p>The metrics, data structures, and single-knob decisions the first two rounds
+referenced but didn't fully unpack. Every page below is cross-linked to the
+others — follow the trail as deep as you want.</p>
+
+<div class="cards" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+
+  <a class="chapter-card" href="/story/09/27_sharpe_ratio">
+    <span class="num">DEEP DIVE 27 · METRICS</span>
+    <h3>Sharpe ratio — definition + a dozen mistakes</h3>
+    <p class="preview">
+      How 0.000159 daily mean / 0.005 daily std × √252 = 0.510. The conventions
+      (risk-free=0, sqrt-252). What it misses (skew, tail, lock-up). Why our 0.510
+      doesn't survive DSR + effective-N.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/28_cagr_drawdown_calmar">
+    <span class="num">DEEP DIVE 28 · METRICS</span>
+    <h3>CAGR, max drawdown, and Calmar</h3>
+    <p class="preview">
+      $100k→$146k over 8yr = +4.3% CAGR. The peak-to-trough algorithm (−44% max DD).
+      Calmar 0.10 (grim). Time-under-water and why no single metric is enough.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/29_fixed_log_y_axis">
+    <span class="num">DEEP DIVE 29 · RENDERING</span>
+    <h3>The fixed log-y axis (−90% to +1000%)</h3>
+    <p class="preview">
+      Flaw #4: per-chart auto-scaling made +5% and +500% charts identical. The fix:
+      a shared log(0.1)→log(11) axis. Why log not linear, why clipping is intentional,
+      the Bug #7 divide-by-zero guard.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/30_isotonic_calibration">
+    <span class="num">DEEP DIVE 30 · CALIBRATION</span>
+    <h3>Isotonic calibration — recovering probabilities</h3>
+    <p class="preview">
+      class_weight='balanced' calibrates to a 50/50 world that doesn't exist. PAVA on a
+      held-out 10% slice pulls probabilities back. Per-fold, rank-preserving. BNTX's
+      raw 0.85 → calibrated 0.720.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/31_lightgbm_internals">
+    <span class="num">DEEP DIVE 31 · MODEL</span>
+    <h3>LightGBM internals — how GBM finds splits</h3>
+    <p class="preview">
+      Gradient = (y − sigmoid(F(x))). Histogram bins for O(features×bins) splits.
+      Leaf-wise growth. Every hyperparameter (400 trees, lr=0.05, 63 leaves,
+      min_child=200) explained.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/32_position_size_formula">
+    <span class="num">DEEP DIVE 32 · SIZING</span>
+    <h3>The min(equity×pct, max_adv×adv, cash) formula</h3>
+    <p class="preview">
+      Three caps: diversification (4%), liquidity (2% of ADV), solvency (cash).
+      BNTX worked: cap-1 wins → 18 shares → $3,981. Integer floor, $100 floor,
+      sensitivity to the dials.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/33_adv20_metric">
+    <span class="num">DEEP DIVE 33 · LIQUIDITY</span>
+    <h3>Average Daily Volume — the ADV20 metric</h3>
+    <p class="preview">
+      mean(close × volume) over 20 days. Why 20, why dollar-volume. BNTX = $524M.
+      The $5M floor. Reverse-split invisibility. The Q/V ratio feeding Almgren-Chriss.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/34_blotter_equity_summary">
+    <span class="num">DEEP DIVE 34 · DATA</span>
+    <h3>The blotter, equity curve, and summary</h3>
+    <p class="preview">
+      The three artifacts every backtest returns. Column-by-column schema. The
+      conservation invariant (cash + MTM == equity). Why debugging always starts
+      with the blotter.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/35_log_vs_simple_returns">
+    <span class="num">DEEP DIVE 35 · RETURNS</span>
+    <h3>Log returns vs simple returns</h3>
+    <p class="preview">
+      Labels use simple; the bootstrap uses log; Sharpe uses simple. Why each is
+      correct where it sits. The +50% (log 0.405) vs −50% (log −0.693) asymmetry.
+      The "never sum daily simple returns" trap.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/36_allocation_budget">
+    <span class="num">DEEP DIVE 36 · ALLOCATION</span>
+    <h3>5 × 4% × 5 cohorts = 100% deployed</h3>
+    <p class="preview">
+      The arithmetic of full-but-unleveraged deployment. Why 5 picks, why 4%, why
+      40-day hold. ~$20k changes hands weekly. Drawdown behaviour: no martingale,
+      stays calm and small.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/37_trading_calendar">
+    <span class="num">DEEP DIVE 37 · CALENDAR</span>
+    <h3>Fridays, holidays, half-days, ISO-week rule</h3>
+    <p class="preview">
+      ~252 trading days/yr, 11 market holidays, 3 half-days. The "last trading day of
+      ISO week ≥ 3 days" anchor rule. Labels are calendar-fuzzy but trading-day exact.
+      The DST trap (we go tz-naive).
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/38_spy_beta">
+    <span class="num">DEEP DIVE 38 · RISK</span>
+    <h3>Market beta — why BNTX's beta_spy_63d was 0.00</h3>
+    <p class="preview">
+      cov(stock, SPY)/var(SPY) over 63 days. BNTX traded on vaccine catalysts,
+      uncorrelated with SPY → β=0. Beta=0 ≠ no risk (vol was 76%). High momentum +
+      zero beta = pure-alpha signature.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+</div>
+
+<h2 id="drill-deeper-round-4">🛠️ Drill deeper — round 4 (the bug audit, 13 more deep-dives)</h2>
+
+<p>An exhaustive multi-agent audit of the whole codebase found and fixed 11 more
+genuine bugs — several of them <em>silent</em> correctness/leakage issues, not crashes.
+This round documents the audit itself: the hardening story, each bug class, the
+testing philosophy that let some bugs hide, and the honest feature-gap roadmap.
+All cross-linked so you can trace any thread as deep as you want.</p>
+
+<div class="cards" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+
+  <a class="chapter-card" href="/story/09/39_hardening_story" style="border-color: rgba(255,122,133,0.4);">
+    <span class="num">DEEP DIVE 39 · OVERVIEW</span>
+    <h3>The hardening story — 21 bugs across 18 passes</h3>
+    <p class="preview">
+      The full severity table. Why the most dangerous bugs were silent (look-ahead,
+      label corruption, a dead feature, row misalignment), not crashes. Test count
+      15 → 334.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/40_lookahead_exit_bug">
+    <span class="num">DEEP DIVE 40 · LEAKAGE</span>
+    <h3>Look-ahead in the exit fill — the price-gap bug</h3>
+    <p class="preview">
+      A union calendar + per-ticker price gaps meant an exit could fill at a FUTURE
+      bar, booked on today. The fix: defer the close until the loop reaches the real bar.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/41_row_alignment" style="border-color: rgba(255,122,133,0.4);">
+    <span class="num">DEEP DIVE 41 · ALIGNMENT</span>
+    <h3>The row-alignment landmine</h3>
+    <p class="preview">
+      `merged.iloc[:len(embs)]` — a positional prefix standing in for a boolean subset —
+      could silently misalign image features with their labels. One canonical frame,
+      one mask, applied to everything.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/42_beta_zero_bug" style="border-color: rgba(255,180,84,0.5);">
+    <span class="num">DEEP DIVE 42 · DEAD CODE</span>
+    <h3>Why beta_spy_63d was silently zero</h3>
+    <p class="preview">
+      An off-by-one made the length guard never pass → beta = 0.0 for EVERY stock.
+      Correction: the deep-dive #38 "BNTX beta = 0.00" narrative was a bug artifact,
+      not a finding.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/43_label_corruption">
+    <span class="num">DEEP DIVE 43 · DATA CORRUPTION</span>
+    <h3>When inf becomes a buy signal</h3>
+    <p class="preview">
+      A zero anchor close → ret = inf → (inf ≥ 0.25) → a false-positive label, on exactly
+      the delisted names. Guard the division; drop the row; keep a zero END close as a
+      real −100%.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/44_numerical_stability">
+    <span class="num">DEEP DIVE 44 · NUMERICS</span>
+    <h3>Numerical stability patterns</h3>
+    <p class="preview">
+      Epsilon floors, log/sqrt sign guards, the negative-base→complex crash, std on
+      constant series, NaN comparison traps, and the _safe() containment boundary.
+      The full checklist.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/45_testing_philosophy" style="border-color: rgba(78,224,168,0.4);">
+    <span class="num">DEEP DIVE 45 · TESTING</span>
+    <h3>Why finite-value tests let a dead feature live</h3>
+    <p class="preview">
+      Finiteness ≠ correctness (0.0 is finite). Golden values, discriminating assertions,
+      invariants, refute-by-default verification, bug tombstones — and the coverage gaps
+      that remain.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/46_forward_pick_harness">
+    <span class="num">DEEP DIVE 46 · LIVE</span>
+    <h3>The forward paper-trading harness</h3>
+    <p class="preview">
+      It could never emit a pick: labeling trims the trailing 40 bars, so no anchor's
+      resolution was ever ≥ today. The fix: a latest-candidate path + freshness guard.
+      Settle loop still TODO.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/47_roadmap" style="border-color: rgba(110,168,255,0.5);">
+    <span class="num">DEEP DIVE 47 · ROADMAP</span>
+    <h3>Feature gaps & what to build next</h3>
+    <p class="preview">
+      Prioritized by value/effort: the settle loop, paired-bootstrap gap significance,
+      data_hashes.json, PLS vs PCA, tiered spread, point-in-time universe, and the
+      beta-doc correction.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/48_degenerate_folds">
+    <span class="num">DEEP DIVE 48 · EDGE FOLDS</span>
+    <h3>PCA components, tiny samples, singleton classes</h3>
+    <p class="preview">
+      Early walk-forward folds are starved. PCA n_components must be bounded by
+      n_samples (not just features); stratified split crashes on a singleton class.
+      Clamp + degrade gracefully.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/49_phantom_positions">
+    <span class="num">DEEP DIVE 49 · ACCOUNTING</span>
+    <h3>Phantom positions & conservation invariants</h3>
+    <p class="preview">
+      A ticker in scores but not price_lookup opened a position that never closed and
+      never hit the blotter — trapped cash, masked by the MTM fallback. Never open what
+      you can't price.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/50_atomic_writes_integrity">
+    <span class="num">DEEP DIVE 50 · INTEGRITY</span>
+    <h3>Atomic writes & duplicate dates</h3>
+    <p class="preview">
+      A crash mid-write could erase the lockbox; a duplicate yfinance date shifts every
+      positional index. Temp-file + os.replace; drop_duplicates(keep="last"); empty is
+      a valid input.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+  <a class="chapter-card" href="/story/09/51_audit_methodology" style="border-color: rgba(78,224,168,0.4);">
+    <span class="num">DEEP DIVE 51 · METHOD</span>
+    <h3>How the audit worked</h3>
+    <p class="preview">
+      Fan-out finders (per module + cross-cutting dimensions) → refute-by-default
+      verification → synthesis. Why cross-cutting finders win. The structured-output
+      failure and the prose-retry recovery.
+    </p>
+    <span class="read-more">Read →</span>
+  </a>
+
+</div>
+
 <h2>Try this yourself</h2>
 
 <p>You can pick any (ticker, anchor_date) pair from our scores parquet and walk

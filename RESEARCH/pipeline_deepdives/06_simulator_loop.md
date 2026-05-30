@@ -1,16 +1,16 @@
 # The simulator's per-day inner loop — exact ordering and why it matters
 
-The event-driven backtester in `src/stock_chart/simulator.py` walks the trading calendar day by day. Each day it executes the same five-step ritual, in a very specific order. The ordering isn't aesthetic — every adjacent pair of steps has a load-bearing dependency, and swapping any two of them silently corrupts P&L, position counts, or the equity curve. This note pins down why the loop runs the way it does, with BNTX (2021-07-02 entry, 2021-08-30 exit at horizon `H=40`) as a running example.
+The event-driven backtester in `src/stock_chart/simulator.py` walks the [trading calendar](/story/09/37_trading_calendar) day by day. Each day it executes the same five-step ritual, in a very specific order. The ordering isn't aesthetic — every adjacent pair of steps has a load-bearing dependency, and swapping any two of them silently corrupts P&L, position counts, or the equity curve. This note pins down why the loop runs the way it does, with BNTX (2021-07-02 entry, 2021-08-30 exit at horizon `H=40`) as a running example.
 
 ## The five steps, in order
 
-For each `today` on the trading calendar:
+For each `today` on the [trading calendar](/story/09/37_trading_calendar):
 
 1. **`_check_trailing_stop(today)`** — for every open position, lift `peak_close` if `close[today] > peak_close`; if `(peak_close - close[today]) / peak_close > trailing_stop_pct`, write `exit_date = today`.
-2. **`_close_due(today)`** — for every open position whose `exit_date <= today`, fill at `close × (1 - slippage_bps / 1e4)`, deduct commission, credit proceeds to `cash`, append a blotter row, remove from `open_pos`.
+2. **`_close_due(today)`** — for every open position whose `exit_date <= today`, fill at `close × (1 - slippage_bps / 1e4)`, deduct commission, credit proceeds to `cash`, append a [blotter](/story/09/34_blotter_equity_summary) row, remove from `open_pos`.
 3. **Mark-to-market** — `equity = cash + sum(shares × close[today])` over remaining open positions, falling back to `entry_price` if today's close is missing.
 4. **Record `daily_equity`** — append `{date, equity, cash, n_positions}`.
-5. **Entry pass (anchor days only)** — iterate the day's candidates by descending score, apply ADV filter + no-duplicate-ticker rule + position-size cap, fill at `anchor_close × (1 + slippage_bps / 1e4)`, allocate `min(equity × max_position_pct, max_adv_pct × adv20_usd, cash)`, buy integer shares, append to `open_pos`. Cap at `max_new_per_week`.
+5. **Entry pass (anchor days only)** — iterate the day's candidates by descending score, apply ADV filter + no-duplicate-ticker rule + [position-size](/story/09/32_position_size_formula) cap, fill at `anchor_close × (1 + slippage_bps / 1e4)`, allocate `min(equity × max_position_pct, max_adv_pct × adv20_usd, cash)`, buy integer shares, append to `open_pos`. Cap at `max_new_per_week`.
 
 ## Why this exact order
 
@@ -18,7 +18,7 @@ For each `today` on the trading calendar:
 
 **Close-due before MTM.** Cash from today's exits has to land in the cash bucket *before* equity is computed; otherwise the closed shares would be double-counted (still in `open_pos` at today's close) or, worse, zero-counted (removed from `open_pos` but proceeds not yet in `cash`). Running close-due first preserves the invariant `equity = cash + Σ(shares × close)` after step 2.
 
-**MTM before entry.** The position-size formula uses `equity × max_position_pct`. If entries ran before MTM, sizing would use *yesterday's* equity, which is wrong on any day that had exits or material price moves. Putting MTM first means today's buys are sized off today's real equity.
+**MTM before entry.** The [position-size formula](/story/09/32_position_size_formula) uses `equity × max_position_pct`. If entries ran before MTM, sizing would use *yesterday's* equity, which is wrong on any day that had exits or material price moves. Putting MTM first means today's buys are sized off today's real equity.
 
 **Entry last — and the deliberate one-day lag.** New positions enter `open_pos` only after `daily_equity` is already recorded. That row reflects the portfolio *before* today's fills, which is exactly what we want: you do not get to mark your own fill on day-0. The buy slippage (`+slippage_bps`) is already a cost; MTM'ing the fresh position at the same `anchor_close` would create a tiny phantom loss on entry day. Skipping it until tomorrow is the cleaner accounting.
 
@@ -34,7 +34,7 @@ The loop deliberately allows the same ticker to exit and re-enter on the same da
 
 ## The terminal force-close
 
-After the final trading day, anything still in `open_pos` is force-closed at the last available close. This guarantees every blotter row has both an entry and an exit — no dangling positions, no half-completed round trips. Without this step, end-of-backtest equity would have a long tail of unrealized P&L that the trade-level metrics couldn't see.
+After the final trading day, anything still in `open_pos` is force-closed at the last available close. This guarantees every [blotter](/story/09/34_blotter_equity_summary) row has both an entry and an exit — no dangling positions, no half-completed round trips. Without this step, end-of-backtest equity would have a long tail of unrealized P&L that the trade-level metrics couldn't see.
 
 ## Conservation invariants
 

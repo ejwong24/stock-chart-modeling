@@ -8,7 +8,7 @@ If the Oracle ARM64 instance hosting `/home/ubuntu/projects/stock_chart_modeling
 
 **Tier 2 — Raw data.** `data/adjusted/*.parquet` — roughly 6,500 parquets at ~50 KB each, totaling ~325 MB. Explicitly excluded via `.gitignore`. Recoverable by re-running `scripts/02_acquire_data.py`. Wall-clock: ~25–40 minutes.
 
-**Tier 3 — Computed artifacts.** `reports/full/*`: ~150 MB of DINOv2 embeddings, per-fold scores, blotters, equity curves. Not in git. Recoverable by re-running `scripts/run_pipeline.py` end-to-end. Wall-clock: ~6–10 hours.
+**Tier 3 — Computed artifacts.** `reports/full/*`: ~150 MB of [DINOv2](/story/09/01_dinov2_architecture) embeddings, per-fold scores, blotters, equity curves. Not in git. Recoverable by re-running `scripts/run_pipeline.py` end-to-end. Wall-clock: ~6–10 hours.
 
 **Tier 4 — Model objects.** Per-fold joblib pickles. Downstream of Tier 3.
 
@@ -58,7 +58,7 @@ GitHub is not load-bearing. The Oracle box's `/home/ubuntu/` is on hourly snapsh
 
 ## Tailscale: re-issuing the serve rule
 
-The Tailscale serve rule is per-instance and must be re-issued after recovery:
+The [Tailscale serve](/story/09/15_deployment_tailscale) rule is per-instance and must be re-issued after recovery:
 
 ```bash
 tailscale serve --bg --https=3344 http://localhost:3344

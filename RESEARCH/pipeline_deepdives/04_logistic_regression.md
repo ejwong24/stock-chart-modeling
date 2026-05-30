@@ -77,9 +77,9 @@ Two consequences:
 
 For BNTX at **0.720**: the right reading is "this anchor is meaningfully above the model's balanced-world midpoint, and ranked #10 out of all anchors in its fold." The wrong reading is "the model is 72% confident BNTX will hit the +25%/40d threshold."
 
-## The partial fix: per-fold isotonic calibration
+## The partial fix: per-fold [isotonic calibration](/story/09/30_isotonic_calibration)
 
-To claw back some interpretability, the pipeline fits an **isotonic regression** on a held-out 10% slice of each training fold, mapping raw probabilities to empirical positive rates. Isotonic is a non-parametric monotone mapping, so it preserves rank order while pulling probabilities back toward the true base rate.
+To claw back some interpretability, the pipeline fits an **[isotonic regression](/story/09/30_isotonic_calibration)** on a held-out 10% slice of each training fold, mapping raw probabilities to empirical positive rates. Isotonic is a non-parametric monotone mapping, so it preserves rank order while pulling probabilities back toward the true base rate.
 
 Caveat: this calibration is fit **per fold**. The mapping that turned BNTX's raw `z` into 0.720 was learned from one specific slice of one specific fold. A score of 0.720 in fold 7 and 0.720 in fold 12 are not strictly comparable — they're outputs of two different isotonic functions on two different underlying classifiers.
 

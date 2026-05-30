@@ -64,4 +64,4 @@ These are wide. That is the honest answer to "what is the model's true CAGR" —
 
 ---
 
-> **See also:** [/story/09/10](/story/09/10) — the Deflated Sharpe Ratio. [/story/06_statistics](/story/06_statistics) — the broader framework.
+> **See also:** [/story/09/10](/story/09/10) — the [Deflated [Sharpe Ratio](/story/09/27_sharpe_ratio)](/story/09/10_deflated_sharpe). [/story/06_statistics](/story/06_statistics) — the broader framework.

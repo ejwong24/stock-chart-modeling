@@ -32,9 +32,9 @@ The window is also strictly causal — only days `1..252` before the anchor, no 
 
 After the transform, the 252-dim vector is a *normalized volume history* — for each day in the lookback, how unusual was the trading activity relative to the stock's own past year. Values cluster around zero, with positive numbers for above-baseline days and negatives for quiet ones. The shape of this vector — where the spikes sit, whether they cluster recently, whether there's a slow drift up — is what PCA is meant to summarize.
 
-## Why PCA-64 again
+## Why [PCA-64](/story/09/02_pca_math) again
 
-Same reasoning as the image track. 252 dimensions is too many to feed a linear head with the data we have, and adjacent days are highly correlated, so the effective rank is much lower than 252. PCA-64 picks off the leading patterns:
+Same reasoning as the image track. 252 dimensions is too many to feed a linear head with the data we have, and adjacent days are highly correlated, so the effective rank is much lower than 252. [PCA-64](/story/09/02_pca_math) picks off the leading patterns:
 
 - PC1-ish: overall volume level vs the year (was the last quarter louder than the first?)
 - PC2-ish: trend (is volume drifting up over the window?)
@@ -47,7 +47,7 @@ The StandardScaler before PCA matters: even after the per-stock z-score, the var
 
 We feed `[image_PC_64 ; volume_PC_64]` = 128 features into one LR (and one LGBM). The alternative — train an image model and a volume model separately, then average — throws away the cross-signal. The whole point of a joint linear head is that it can learn weights like *"price-pattern PC3 is bullish ONLY when volume PC7 is also elevated"*. A momentum signal with confirming volume is different from a momentum signal on thin tape, and only a joint model can express that.
 
-## The awkward redundancy with engineered features
+## The awkward redundancy with [engineered features](/story/09/03_engineered_features)
 
 In the engineered track we also compute `log_dollar_vol_z252`, `vol_ratio_20_252`, and `vol_trend_slope_60d` — three hand-crafted scalars that summarize roughly the same information the 64-dim PCA is trying to extract automatically. In ablation, the engineered scalars do most of the work; dropping the PCA-64 volume block barely moves CV score. The PCA view is a more flexible representation, but with our data volume it can't pay rent against three well-chosen summary stats.
 
@@ -62,4 +62,4 @@ vol_ratio_20_252     =  0.7553
 
 Both numbers say the same thing: recent dollar volume was slightly *below* the trailing-year average, and the 20-day average was about 76% of the 252-day average. So whatever the rally was, it wasn't a parabolic blow-off on euphoric volume — it was orderly, almost quiet. The volume-PCA features for that anchor presumably tell a similar story across their 64 dims, but we can't read them as directly.
 
-> **Callout — interpretability gap:** The 64 volume PCs contribute *something* to the final LR score, but how much, and through which PCs, is genuinely unclear. The LR coefficients can distinguish the image half from the volume half, but within a small-data fold the individual PC coefficients aren't independently estimable — they're correlated, regularized, and partially redundant with the engineered scalars. The honest answer is: the engineered features carry the volume signal, and the PCA-64 block is along for the ride.
+> **Callout — interpretability gap:** The 64 volume PCs contribute *something* to the final LR score, but how much, and through which PCs, is genuinely unclear. The LR coefficients can distinguish the image half from the volume half, but within a small-data fold the individual PC coefficients aren't independently estimable — they're correlated, regularized, and partially redundant with the engineered scalars. The honest answer is: the [engineered features](/story/09/03_engineered_features) carry the volume signal, and the PCA-64 block is along for the ride.

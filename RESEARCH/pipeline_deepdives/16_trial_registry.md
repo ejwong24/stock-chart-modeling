@@ -1,10 +1,10 @@
 # The trial registry — every config tried, counted once, audited forever
 
-The single most damning critique of the original stock-selection document was four words long: *best of seventy-two*. The author had quietly screened seventy-two configurations and reported only the winner's Sharpe ratio. No deflation, no honest accounting. The trial registry exists so that mistake cannot be repeated by accident.
+The single most damning critique of the original stock-selection document was four words long: *best of seventy-two*. The author had quietly screened seventy-two configurations and reported only the winner's [Sharpe ratio](/story/09/27_sharpe_ratio). No deflation, no honest accounting. The trial registry exists so that mistake cannot be repeated by accident.
 
 ## Why the registry exists
 
-The deflated Sharpe ratio (Bailey & López de Prado, 2014) requires one input that almost nobody honestly reports: `N_trials`, the number of distinct configurations actually evaluated before the headline number was chosen. Without it, DSR cannot correct for selection bias. The trial registry at `configs/trial_registry.jsonl` is the source of truth for that N.
+The [deflated Sharpe ratio](/story/09/10_deflated_sharpe) (Bailey & López de Prado, 2014) requires one input that almost nobody honestly reports: `N_trials`, the number of distinct configurations actually evaluated before the headline number was chosen. Without it, DSR cannot correct for selection bias. The trial registry at `configs/trial_registry.jsonl` is the source of truth for that N.
 
 ## The JSONL format
 
@@ -36,7 +36,7 @@ Pipeline runs are parallelized with `joblib` and can append from multiple proces
 
 ## The audit log
 
-A second file at `configs/audit.jsonl` plays a complementary role. It records every significant event — data acquisition, model fit, fold evaluation — with `ts` and `git_sha`. The audit log answers *what did the pipeline do, and when?* The trial registry answers *how many configurations have ever been evaluated?*
+A second file at `configs/audit.jsonl` plays a complementary role. It records every significant event — [data acquisition](/story/09/13_data_acquisition), model fit, fold evaluation — with `ts` and `git_sha`. The audit log answers *what did the pipeline do, and when?* The trial registry answers *how many configurations have ever been evaluated?*
 
 ## The lockbox claim
 

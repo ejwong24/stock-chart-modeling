@@ -127,6 +127,15 @@ ALL_DEEPDIVES = [
     "22_block_bootstrap_params", "23_multiple_comparison_landscape",
     "24_effective_sample_size", "25_frictions_beyond_impact",
     "26_capacity_ceiling",
+    "27_sharpe_ratio", "28_cagr_drawdown_calmar", "29_fixed_log_y_axis",
+    "30_isotonic_calibration", "31_lightgbm_internals", "32_position_size_formula",
+    "33_adv20_metric", "34_blotter_equity_summary", "35_log_vs_simple_returns",
+    "36_allocation_budget", "37_trading_calendar", "38_spy_beta",
+    "39_hardening_story", "40_lookahead_exit_bug", "41_row_alignment",
+    "42_beta_zero_bug", "43_label_corruption", "44_numerical_stability",
+    "45_testing_philosophy", "46_forward_pick_harness", "47_roadmap",
+    "48_degenerate_folds", "49_phantom_positions", "50_atomic_writes_integrity",
+    "51_audit_methodology",
 ]
 
 

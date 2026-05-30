@@ -59,7 +59,7 @@ def _normalize_one(df, ticker):
 
 Notes worth singling out:
 
-- **All-NaN rows** appear on US market holidays when yfinance fills the index with empties. Dropping them keeps the trading calendar honest.
+- **All-NaN rows** appear on US market holidays when yfinance fills the index with empties. Dropping them keeps the [trading calendar](/story/09/37_trading_calendar) honest.
 - **Title-casing columns** sounds trivial but isn't — different yfinance versions disagree on capitalization, and the rename map only works if we normalize first.
 - **NaN close rows** are the fingerprint of halts and post-delisting padding.
 - **tz-naive everywhere** is a discipline choice. Mixing tz-aware and tz-naive frames raises silently in some operations and loudly in others.

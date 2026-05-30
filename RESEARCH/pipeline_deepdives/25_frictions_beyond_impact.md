@@ -1,6 +1,6 @@
 # Frictions beyond impact — bid-ask spread, halt risk, and tax drag
 
-Almgren-Chriss impact (covered at [/story/09/09](/story/09/09)) is the headline transaction cost in academic literature, but it's not the only friction that erodes a momentum strategy's edge. Our simulator models or accounts for three additional realistic costs: **bid-ask spread**, **halt risk**, and **tax drag**.
+[Almgren-Chriss](/story/09/09_almgren_chriss) impact (covered at [/story/09/09](/story/09/09)) is the headline transaction cost in academic literature, but it's not the only friction that erodes a momentum strategy's edge. Our simulator models or accounts for three additional realistic costs: **bid-ask spread**, **halt risk**, and **tax drag**.
 
 ## Bid-ask spread
 
@@ -15,7 +15,7 @@ Spreads scale inversely with liquidity:
 | Small-cap | 20-50 bps | 10-25 bps |
 | Microcap | 50-200 bps | 25-100 bps |
 
-Our simulator's `slippage_bps_each_side` default is **5 bps** when `use_almgren_chriss_impact=False`. Reasonable for "decent liquidity" — fine for mid-cap and larger, optimistic for small caps. When Almgren-Chriss is enabled, the impact term already folds in a spread approximation.
+Our simulator's `slippage_bps_each_side` default is **5 bps** when `use_almgren_chriss_impact=False`. Reasonable for "decent liquidity" — fine for mid-cap and larger, optimistic for small caps. When [Almgren-Chriss](/story/09/09_almgren_chriss) is enabled, the impact term already folds in a spread approximation.
 
 The right long-term model is a separate `spread_bps` parameter scaled by liquidity tier rather than a single flat number. On the future-work list.
 

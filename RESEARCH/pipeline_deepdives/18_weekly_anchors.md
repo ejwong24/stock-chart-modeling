@@ -1,19 +1,19 @@
 # Why weekly anchors, not daily — autocorrelation, practical rebalancing, and the dataset size knob
 
-The choice of anchor cadence is one of those quiet methodological decisions that doesn't *look* important in a config file but ends up driving everything: how big our training set is, how honest our confidence intervals are, how much our walk-forward embargo eats, and whether the live system can actually be traded by a human. We picked **weekly** — one labeled row per ticker per ISO calendar week, on Fridays — and the rest of this note explains why.
+The choice of anchor cadence is one of those quiet methodological decisions that doesn't *look* important in a config file but ends up driving everything: how big our training set is, how honest our confidence intervals are, how much our [walk-forward embargo](/story/09/08_walkforward_embargo) eats, and whether the live system can actually be traded by a human. We picked **weekly** — one labeled row per ticker per ISO calendar week, on Fridays — and the rest of this note explains why.
 
 ## The choice
 
-Each ticker contributes **one `(anchor_date, label)` row per ISO calendar week** that has at least 3 trading days. That's roughly **52 anchors per stock per year**. Across our universe of ~6,500 stocks and 8 years of history, that's about **2.6M anchors** before any filtering. After the MA250 prefilter, we land at **~200k anchors** — the actual training set the model sees.
+Each ticker contributes **one `(anchor_date, label)` row per ISO calendar week** that has at least 3 trading days. That's roughly **52 anchors per stock per year**. Across our universe of ~6,500 stocks and 8 years of history, that's about **2.6M anchors** before any filtering. After the [MA250 prefilter](/story/09/07_ma250_prefilter), we land at **~200k anchors** — the actual training set the model sees.
 
 ## Why not daily anchors
 
 The naïve move is "more data is always better." That fails badly here because we're using a **40-trading-day forward return** as the label. Two consecutive daily anchors would share **39 of their 40 forward days**:
 
 - **Autocorrelation is near 1.** `cov(label[t], label[t+1])` is close to `var(label)` — thousands of "rows" that are really one observation in a trench coat.
-- **Effective sample size collapses.** Daily anchors with H=40 give each row uniqueness ≈ 1/40. Nominal 1M rows → effective ~25k.
+- **[Effective sample size](/story/09/24_effective_sample_size) collapses.** Daily anchors with H=40 give each row uniqueness ≈ 1/40. Nominal 1M rows → effective ~25k.
 - **Bootstrap CIs widen dramatically** once you do the overlap accounting properly.
-- **Walk-forward embargo balloons.** Every label touches 40 forward days.
+- **[Walk-forward embargo](/story/09/08_walkforward_embargo) balloons.** Every label touches 40 forward days.
 
 Daily anchors look like 200× the data on paper. In effective-N terms they're maybe 2–3× — and you've paid for it with worse leakage hygiene.
 
@@ -32,7 +32,7 @@ Weekly hits the sweet spot:
 - **4–5× more data than monthly**, which matters for tree models that need enough leaves to generalize
 - **Aligns with how the strategy will actually be traded** — most retail and swing-trading rebalance cadences are weekly
 
-## The López de Prado effective sample size
+## The López de Prado [effective sample size](/story/09/24_effective_sample_size)
 
 For our weekly anchors with H=40 trading days held:
 
@@ -40,7 +40,7 @@ For our weekly anchors with H=40 trading days held:
 - **Effective N:** ~44 (because ~25 concurrent positions on any given day)
 - **SE(Sharpe) widening factor:** `sqrt(1104 / 44) ≈ 5.0`
 
-That widening factor is what feeds the deflated Sharpe machinery downstream.
+That widening factor is what feeds the [deflated Sharpe](/story/09/10_deflated_sharpe) machinery downstream.
 
 ## Execution implications of the weekly grain
 

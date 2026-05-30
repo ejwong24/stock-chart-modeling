@@ -1,6 +1,6 @@
-# Deflated Sharpe Ratio — the math behind the threshold
+# Deflated [Sharpe Ratio](/story/09/27_sharpe_ratio) — the math behind the threshold
 
-The Sharpe ratio is the most-cited number in quant finance and also one of the easiest to fool yourself with. If you try enough models, one of them will post an impressive Sharpe purely by luck. Bailey and Lopez de Prado's 2014 *Deflated Sharpe Ratio* (DSR) is a closed-form correction for exactly that selection bias. This is the math our pipeline implements in `src/stock_chart/stats.py`, walked through end to end.
+The [Sharpe ratio](/story/09/27_sharpe_ratio) is the most-cited number in quant finance and also one of the easiest to fool yourself with. If you try enough models, one of them will post an impressive Sharpe purely by luck. Bailey and Lopez de Prado's 2014 *Deflated Sharpe Ratio* (DSR) is a closed-form correction for exactly that selection bias. This is the math our pipeline implements in `src/stock_chart/stats.py`, walked through end to end.
 
 ## The intuition: the best of N is not the truth
 

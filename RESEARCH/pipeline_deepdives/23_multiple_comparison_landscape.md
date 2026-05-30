@@ -24,7 +24,7 @@ When you try 36 model configurations on the same dataset and report only the bes
 
 ## 3. White's Reality Check (1999) — the first bootstrap method
 
-**Math sketch.** Form the loss-differential vector `d_k = L(benchmark) - L(strategy_k)` for each k. Stationary block bootstrap to get the null distribution of `max_k mean(d_k)`. The Reality Check p-value is the bootstrap quantile of the observed best.
+**Math sketch.** Form the loss-differential vector `d_k = L(benchmark) - L(strategy_k)` for each k. [Stationary block bootstrap](/story/09/22_block_bootstrap_params) to get the null distribution of `max_k mean(d_k)`. The Reality Check p-value is the bootstrap quantile of the observed best.
 
 **When to use it.** Correlated trials, non-normal Sharpe distribution.
 
@@ -42,7 +42,7 @@ When you try 36 model configurations on the same dataset and report only the bes
 
 **Pipeline use.** Implemented in `src/stock_chart/stats.py` via the `arch` package's `SPA` class.
 
-## 5. Deflated Sharpe Ratio (Bailey & López de Prado 2014) — analytical
+## 5. [Deflated [Sharpe Ratio](/story/09/27_sharpe_ratio)](/story/09/10_deflated_sharpe) (Bailey & López de Prado 2014) — analytical
 
 **Math sketch.** Assume Sharpe estimates across N trials are approximately `N(0, sigma_SR^2)` under the null. The expected maximum of N i.i.d. standard normals is roughly `sqrt(2 ln N) - (gamma + ln ln N) / (2 sqrt(2 ln N))`. DSR adjusts the observed best Sharpe by this expected max.
 
@@ -60,7 +60,7 @@ When you try 36 model configurations on the same dataset and report only the bes
 | Holm-Bonferroni | 1979 | No | High | O(K log K) |
 | White's RC | 1999 | Yes | High | O(B·K) |
 | Hansen's SPA | 2005 | Yes | Moderate | O(B·K) |
-| Deflated Sharpe | 2014 | Implicitly | Moderate | O(N) |
+| [Deflated Sharpe](/story/09/10_deflated_sharpe) | 2014 | Implicitly | Moderate | O(N) |
 
 ## Decision tree
 

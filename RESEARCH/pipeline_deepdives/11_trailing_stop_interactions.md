@@ -6,11 +6,11 @@ Every position in the simulator has an expiration date stamped on it the moment 
 
 When a position opens, `exit_date = resolution_date`. The daily loop then does two things in order: first `_check_trailing_stop(today)` runs, and only after that does `_close_due(today)` close everything whose `exit_date <= today`. The stop check never closes anything directly — it just shortens `exit_date` to `today`. The actual close then happens in the same pass through `_close_due`, at today's close price.
 
-Why bother with the indirection? Because it keeps the closing logic uniform. There is exactly one path that turns a position into a blotter row, and it doesn't care *why* the exit date is what it is. The horizon exit and the stop-out share the same accounting, the same PnL math, the same realized-return computation. The stop is just a `min(exit_date, today)` operation in disguise.
+Why bother with the indirection? Because it keeps the closing logic uniform. There is exactly one path that turns a position into a [blotter](/story/09/34_blotter_equity_summary) row, and it doesn't care *why* the exit date is what it is. The horizon exit and the stop-out share the same accounting, the same PnL math, the same realized-return computation. The stop is just a `min(exit_date, today)` operation in disguise.
 
 ## Edge case: stop fires before the horizon
 
-Most interesting case. Stop fires on day D, where D < horizon_exit_date. The simulator overwrites `exit_date = D`, falls through to `_close_due`, and closes at D's close. The blotter row records `exit_date = D` — not the original horizon date — which is what you want for any downstream analysis that asks "how long was this position held?"
+Most interesting case. Stop fires on day D, where D < horizon_exit_date. The simulator overwrites `exit_date = D`, falls through to `_close_due`, and closes at D's close. The [blotter](/story/09/34_blotter_equity_summary) row records `exit_date = D` — not the original horizon date — which is what you want for any downstream analysis that asks "how long was this position held?"
 
 ## Edge case: stop fires exactly on the horizon
 

@@ -2,7 +2,7 @@
 
 A single backtest is a confession, not evidence. The stock-modeling pipeline uses three orthogonal validation modes because each one catches a failure the others can't see. Walk-forward gives you fast iteration. The lockbox keeps you honest after iteration. Forward paper-trading is the only thing that knows what year it is.
 
-## Walk-forward cross-validation
+## [Walk-forward cross-validation](/story/09/08_walkforward_embargo)
 
 This is the bread-and-butter time-series CV. For each `year` in `2018..2025`, train on everything from 2017 through `year-1` and predict on `year`. Eight folds, each one's training window growing by a year.
 
@@ -18,7 +18,7 @@ Implemented in `src/stock_chart/splits.py` with a López de Prado embargo — 40
 
 Enforcement lives in `src/stock_chart/lockbox.py`. The `claim_lockbox()` function is one-shot per `(horizon, threshold, model)` tuple. After the first claim, subsequent claims raise `LockboxError` unless `allow_overwrite=True` (research/sandbox modes only).
 
-**Catches:** multiple-comparison selection bias. You only spend the lockbox once.
+**Catches:** [multiple-comparison](/story/09/23_multiple_comparison_landscape) selection bias. You only spend the lockbox once.
 
 **Misses:** regime change between the historical lockbox and live trading. 2025 still happened in the past.
 
@@ -42,7 +42,7 @@ The trades are paper, not real. Forty trading days later, `scripts/forward_resol
 
 | Mode | Catches | Misses | Compute cost | Time to result |
 |---|---|---|---|---|
-| Walk-forward CV | Per-year regime overfit | Selection bias | ~30 min on 8 folds × 36 configs | Same day |
+| [Walk-forward CV](/story/09/08_walkforward_embargo) | Per-year regime overfit | Selection bias | ~30 min on 8 folds × 36 configs | Same day |
 | Lockbox 2025 | Selection bias | Live regime change | ~1 min | Same day |
 | Forward paper-trading | Regime change, pipeline drift | Edge cases already in history | Negligible | ~3-12 months |
 

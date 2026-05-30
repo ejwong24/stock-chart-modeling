@@ -4,7 +4,7 @@
 
 Principal Component Analysis finds new axes for your data such that each axis captures as much variance as possible while staying perpendicular to the ones before it. Imagine a cloud of points in 384-dimensional space. The **first principal component (PC1)** is the single direction along which that cloud is most stretched out. The **second principal component (PC2)** is the direction of biggest remaining spread, subject to being orthogonal to PC1. PC3 is the biggest spread orthogonal to both, and so on.
 
-When we keep the top 64 of these 384 directions, we are choosing the 64 axes that, together, "explain" the most variance in the embedding cloud. Projecting each 384-dim DINOv2 embedding onto those 64 axes gives us a 64-dim vector that preserves 91.5% of the variance of the original. The other 320 directions get thrown out as low-variance noise.
+When we keep the top 64 of these 384 directions, we are choosing the 64 axes that, together, "explain" the most variance in the embedding cloud. Projecting each 384-dim [DINOv2](/story/09/01_dinov2_architecture) embedding onto those 64 axes gives us a 64-dim vector that preserves 91.5% of the variance of the original. The other 320 directions get thrown out as low-variance noise.
 
 That is the entire elevator pitch. PCA is a coordinate rotation followed by a truncation, chosen to keep the directions of biggest spread.
 
@@ -59,7 +59,7 @@ This is fine for prediction — the model relearns the coefficients in each fold
 
 ## Alternatives that could plausibly do better
 
-PCA is the default, not the optimum. Several methods could in principle extract more signal from the 384-dim DINOv2 embedding:
+PCA is the default, not the optimum. Several methods could in principle extract more signal from the 384-dim [DINOv2](/story/09/01_dinov2_architecture) embedding:
 
 - **Partial Least Squares (PLS)** — supervised. Picks directions that maximize covariance with the label, not just variance in `X`. Would not have discarded our hypothetical dim 100.
 - **Linear Discriminant Analysis (LDA)** — supervised. Picks directions that best separate the classes (up vs down). Limited to `n_classes - 1` components, so not a drop-in for 64 dims, but powerful for binary classification.
